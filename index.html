@@ -73,6 +73,17 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
   font-size:10px;min-width:17px;height:17px;border-radius:9px;display:flex;
   align-items:center;justify-content:center;font-weight:800;padding:0 4px}
 
+/* ---------- зал: сцена кофейни ---------- */
+.shopScene{position:relative;background:#F3E3D1;border-bottom:3px solid var(--line)}
+.shopScene canvas{width:100%;display:block;cursor:pointer}
+.pickCard{background:var(--milk);border:2px solid var(--crema);border-radius:var(--r);
+  padding:14px;display:flex;gap:12px;align-items:center;animation:pop .25s ease}
+.pickCard .who{flex:1;min-width:0}
+.pickCard .nm{font-weight:800;font-size:15px}
+.pickCard .ord{font-size:13.5px;color:var(--dim);margin-top:2px}
+.pickCard .ex{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.hintLine{text-align:center;color:var(--dim);font-size:13.5px;padding:6px 4px}
+
 /* ---------- зал: гости ---------- */
 .guest{display:flex;gap:12px;align-items:flex-start;background:var(--milk);
   border:2px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px;
@@ -228,10 +239,9 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
 
   <!-- ЗАЛ -->
   <section class="screen on" id="s-hall">
-    <div class="pad">
-      <h2>Зал</h2>
-      <div class="sub" id="hallSub">Гости приходят сами. Нажмите на заказ, чтобы встать к машине.</div>
-      <div id="guests"></div>
+    <div class="shopScene"><canvas id="scene"></canvas></div>
+    <div class="pad" style="padding-top:12px">
+      <div id="pickBox"></div>
     </div>
   </section>
 
@@ -366,6 +376,7 @@ function load(){
 function save(){ try{ localStorage.setItem(SAVE, JSON.stringify(S)); }catch(e){} }
 
 let guests = [];
+let leaving = [];   // те, кто идёт к двери и вот-вот исчезнет
 let current = null;      // обслуживаемый гость
 let guestSeq = 0;
 
@@ -431,47 +442,372 @@ function spawnGuest(){
     const k = exKeys[Math.floor(Math.random()*exKeys.length)];
     if(!want.includes(k)) want.push(k);
   }
+  const R = a => a[Math.floor(Math.random()*a.length)];
   guests.push({
     id: ++guestSeq,
-    name: NAMES[Math.floor(Math.random()*NAMES.length)],
-    face: FACES[Math.floor(Math.random()*FACES.length)],
+    name: R(NAMES),
+    face: R(FACES),
     drink, extras: want,
     patience: 100,
+    // сцена: входит из двери и идёт к стойке
+    x: DOOR_X, dir: 1, state: 'walk', sel: false,
+    skin: R(SKINS), cloth: R(CLOTHES), hair: R(HAIRS),
+    longHair: Math.random() < .45,
   });
   renderHall(); hud();
 }
 
-function renderHall(){
-  const box = document.getElementById('guests');
-  if(!guests.length){
-    box.innerHTML = '<div class="empty"><div class="big">🌿</div>Пока никого. Сходите за добавками в мини-игры — скоро придут гости.</div>';
-    return;
+
+/* =========================================================================
+   СЦЕНА КОФЕЙНИ
+   Гость входит в дверь слева, идёт по залу и встаёт в очередь к стойке.
+   Рисуется на canvas: так персонажи могут ходить, а не просто лежать списком.
+   ========================================================================= */
+const SW = 420, SH = 330;          // логические размеры сцены
+const DOOR_X = 46;                 // где дверь
+const QUEUE_X = [232, 190, 148, 106];  // места в очереди, первое — у стойки
+const FLOOR_Y = 250;               // линия пола, на ней стоят ноги
+
+const sceneCv = document.getElementById('scene');
+const sctx = sceneCv.getContext ? sceneCv.getContext('2d') : null;
+let sceneW = 0, sceneScale = 1, sceneRAF = null, sceneT = 0;
+
+/* Палитры персонажей — одежда, кожа, волосы. */
+const SKINS = ['#F2C9A0','#E0AC7E','#C98C5E','#8D5A3B','#F7D9BE'];
+const CLOTHES = ['#E8807F','#7CC5B0','#F5C86B','#B49AD1','#8FB8E8','#F09B77','#9CCB8E'];
+const HAIRS = ['#3B2A22','#6B4A3A','#A8703C','#2B2B33','#C97B4A','#E8D5B0'];
+
+function fitScene(){
+  if(!sctx) return;
+  const box = sceneCv.parentElement.getBoundingClientRect();
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  sceneW = Math.max(280, Math.floor(box.width));
+  sceneScale = sceneW / SW;
+  const h = Math.round(SH * sceneScale);
+  sceneCv.width = sceneW * dpr;
+  sceneCv.height = h * dpr;
+  sceneCv.style.height = h + 'px';
+  sctx.setTransform(dpr * sceneScale, 0, 0, dpr * sceneScale, 0, 0);
+}
+addEventListener('resize', fitScene);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) sceneLast = 0; });
+
+/* ---------- интерьер ---------- */
+function drawRoom(){
+  const c = sctx;
+  // стена
+  c.fillStyle = '#F6E5D2'; c.fillRect(0, 0, SW, FLOOR_Y);
+  // обои — тонкая полоска
+  c.strokeStyle = 'rgba(201,138,75,.10)'; c.lineWidth = 8;
+  for(let x = 10; x < SW; x += 26){ c.beginPath(); c.moveTo(x, 0); c.lineTo(x, FLOOR_Y); c.stroke(); }
+  // пол
+  c.fillStyle = '#D9B48C'; c.fillRect(0, FLOOR_Y, SW, SH - FLOOR_Y);
+  c.strokeStyle = 'rgba(120,80,50,.18)'; c.lineWidth = 2;
+  for(let i = 0; i < 9; i++){
+    const x = i * 54 - 20;
+    c.beginPath(); c.moveTo(x, FLOOR_Y); c.lineTo(x - 26, SH); c.stroke();
   }
-  box.innerHTML = guests.map(g => {
-    const d = DRINKS[g.drink];
-    const cls = g.patience > 60 ? '' : (g.patience > 30 ? 'mid' : 'low');
-    const ex = g.extras.map(k => {
-      const have = (S.stock[k]||0) > 0;
-      return `<span class="chip ${have?'have':'need'}">${EXTRAS[k].em} ${EXTRAS[k].name}${have?'':' — нет'}</span>`;
-    }).join('');
-    return `<div class="guest${current&&current.id===g.id?' serving':''}" data-g="${g.id}">
-      <div class="face">${g.face}</div>
-      <div class="info">
-        <div class="nm">${g.name}</div>
-        <div class="order">${d.em} ${d.name} · ${d.price} ₽</div>
-        <div class="extras">${ex||'<span class="chip">без добавок</span>'}</div>
-        <div class="patience ${cls}"><i style="width:${g.patience}%"></i></div>
-      </div>
-    </div>`;
-  }).join('');
+  c.strokeStyle = 'rgba(120,80,50,.22)'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(0, FLOOR_Y); c.lineTo(SW, FLOOR_Y); c.stroke();
+
+  // ---- дверь слева
+  c.fillStyle = '#B9835A';
+  rr(c, DOOR_X - 30, 96, 60, FLOOR_Y - 96, 6); c.fill();
+  c.fillStyle = '#CFE8F0';                       // стекло
+  rr(c, DOOR_X - 22, 106, 44, 62, 4); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(DOOR_X - 18, 160); c.lineTo(DOOR_X + 10, 112); c.stroke();
+  c.fillStyle = '#8A5A3B';
+  c.beginPath(); c.arc(DOOR_X + 20, 176, 3.5, 0, 6.283); c.fill();
+  // колокольчик над дверью — звенит, когда кто-то входит
+  const ring = guests.some(g => g.state === 'walk' && g.x < DOOR_X + 40);
+  c.save();
+  c.translate(DOOR_X, 90);
+  c.rotate(ring ? Math.sin(sceneT / 4) * .34 : 0);
+  c.fillStyle = '#E0A867';
+  c.beginPath(); c.moveTo(-7, 0); c.quadraticCurveTo(0, -12, 7, 0); c.closePath(); c.fill();
+  c.beginPath(); c.arc(0, 2, 2.4, 0, 6.283); c.fill();
+  c.restore();
+  c.fillStyle = '#8A7266'; c.font = '700 9px Nunito, sans-serif'; c.textAlign = 'center';
+  c.fillText('ВХОД', DOOR_X, 90 - 14);
+
+  // ---- окно
+  c.fillStyle = '#BFE3F2';
+  rr(c, 118, 54, 84, 66, 6); c.fill();
+  c.fillStyle = '#A8D8E8';
+  c.beginPath(); c.arc(150, 96, 20, 0, 6.283); c.fill();   // куст за окном
+  c.strokeStyle = '#B9835A'; c.lineWidth = 5;
+  rr(c, 118, 54, 84, 66, 6); c.stroke();
+  c.lineWidth = 3;
+  c.beginPath(); c.moveTo(160, 54); c.lineTo(160, 120);
+  c.moveTo(118, 87); c.lineTo(202, 87); c.stroke();
+
+  // ---- вывеска
+  c.fillStyle = '#4A3229';
+  rr(c, 224, 40, 118, 34, 8); c.fill();
+  c.fillStyle = '#F8F0E7'; c.font = '800 15px Nunito, sans-serif'; c.textAlign = 'center';
+  c.fillText('COFFEE', 283, 62);
+
+  // ---- полка с чашками
+  c.fillStyle = '#B9835A'; c.fillRect(228, 96, 112, 7);
+  for(let i = 0; i < 4; i++){
+    const x = 240 + i * 26;
+    c.fillStyle = ['#FFFBF6','#FFE3E0','#E4F3EC','#FFF1D6'][i];
+    rr(c, x, 82, 16, 14, 3); c.fill();
+    c.strokeStyle = '#D8C6B4'; c.lineWidth = 1.6; rr(c, x, 82, 16, 14, 3); c.stroke();
+  }
+
+  // ---- растение в углу
+  c.fillStyle = '#C4784F';
+  rr(c, 366, 214, 34, 36, 5); c.fill();
+  c.fillStyle = '#7BAE72';
+  [[-1,-1],[0,-1.25],[1,-1]].forEach(([dx,dy],i)=>{
+    c.save(); c.translate(383, 214);
+    c.rotate(dx * .5);
+    c.beginPath(); c.ellipse(0, dy * 26, 11, 26, 0, 0, 6.283); c.fill();
+    c.restore();
+  });
+
+  // ---- СТОЙКА справа
+  const bx = 252;
+  c.fillStyle = '#8A5A3B'; rr(c, bx, 194, SW - bx - 8, 96, 8); c.fill();
+  c.fillStyle = '#A6714A'; rr(c, bx, 194, SW - bx - 8, 16, 8); c.fill();   // столешница
+  // передняя панель
+  c.strokeStyle = 'rgba(0,0,0,.14)'; c.lineWidth = 2;
+  for(let i = 1; i < 4; i++){
+    c.beginPath(); c.moveTo(bx + i * 42, 214); c.lineTo(bx + i * 42, 286); c.stroke();
+  }
+  // кофемашина на стойке
+  c.fillStyle = '#49545C'; rr(c, bx + 16, 150, 62, 46, 6); c.fill();
+  c.fillStyle = '#5E6A73'; rr(c, bx + 24, 158, 46, 12, 3); c.fill();
+  c.fillStyle = '#C98A4B'; c.beginPath(); c.arc(bx + 34, 182, 5, 0, 6.283); c.fill();
+  c.fillStyle = '#7CC5B0'; c.beginPath(); c.arc(bx + 50, 182, 5, 0, 6.283); c.fill();
+  c.fillStyle = '#8E9AA3'; rr(c, bx + 60, 178, 8, 16, 2); c.fill();
+  // чашки на стойке
+  c.fillStyle = '#FFFBF6'; rr(c, bx + 92, 182, 15, 12, 3); c.fill();
+  c.fillStyle = '#6B4326'; c.beginPath(); c.ellipse(bx + 99.5, 183, 6, 2.2, 0, 0, 6.283); c.fill();
+  // табличка «КАССА»
+  c.fillStyle = '#4A3229'; rr(c, bx + 96, 204, 54, 18, 4); c.fill();
+  c.fillStyle = '#F8F0E7'; c.font = '800 9px Nunito, sans-serif'; c.textAlign = 'center';
+  c.fillText('КАССА', bx + 123, 217);
 }
 
-document.getElementById('guests').addEventListener('click', e => {
-  const el = e.target.closest('[data-g]');
-  if(!el) return;
-  const g = guests.find(x => x.id === +el.dataset.g);
+/* ---------- персонаж ---------- */
+function drawPerson(g){
+  const c = sctx;
+  const walking = g.state === 'walk' || g.state === 'leave';
+  const ph = walking ? Math.sin(sceneT / 4.5 + g.id) : 0;   // фаза шага
+  const bob = walking ? Math.abs(Math.sin(sceneT / 4.5 + g.id)) * 2 : 0;
+
+  const x = g.x, y = FLOOR_Y + 6 - bob;
+  c.save();
+  c.translate(x, y);
+  if(g.dir < 0) c.scale(-1, 1);
+
+  // тень
+  c.setTransform(sctx.getTransform());
+  c.fillStyle = 'rgba(90,60,40,.16)';
+  c.beginPath(); c.ellipse(0, 2, 15, 4.5, 0, 0, 6.283); c.fill();
+
+  // ноги
+  c.strokeStyle = '#4A3E52'; c.lineWidth = 5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(-4, -22); c.lineTo(-4 + ph * 6, 0); c.stroke();
+  c.beginPath(); c.moveTo(4, -22); c.lineTo(4 - ph * 6, 0); c.stroke();
+
+  // туловище
+  c.fillStyle = g.cloth;
+  rr(c, -11, -50, 22, 30, 8); c.fill();
+
+  // руки
+  c.strokeStyle = g.cloth; c.lineWidth = 5;
+  c.beginPath(); c.moveTo(-10, -44); c.lineTo(-14 - ph * 4, -28); c.stroke();
+  c.beginPath(); c.moveTo(10, -44); c.lineTo(14 + ph * 4, -28); c.stroke();
+  // кисти
+  c.fillStyle = g.skin;
+  c.beginPath(); c.arc(-14 - ph * 4, -27, 3, 0, 6.283); c.fill();
+  c.beginPath(); c.arc(14 + ph * 4, -27, 3, 0, 6.283); c.fill();
+
+  // шея и голова
+  c.fillStyle = g.skin;
+  c.beginPath(); c.arc(0, -60, 11, 0, 6.283); c.fill();
+
+  // волосы
+  c.fillStyle = g.hair;
+  c.beginPath();
+  c.arc(0, -62, 11.5, Math.PI, 0);
+  c.lineTo(11.5, -60);
+  c.quadraticCurveTo(6, -66, 0, -65);
+  c.quadraticCurveTo(-6, -66, -11.5, -60);
+  c.closePath(); c.fill();
+  if(g.longHair){
+    c.beginPath(); c.ellipse(-9, -56, 5, 11, .2, 0, 6.283); c.fill();
+    c.beginPath(); c.ellipse(9, -56, 5, 11, -.2, 0, 6.283); c.fill();
+  }
+
+  // лицо
+  c.fillStyle = '#3B2A22';
+  const blink = (Math.floor(sceneT / 90) + g.id) % 7 === 0 && (sceneT % 90) < 6;
+  if(blink){
+    c.fillRect(-6, -61, 4, 1.6); c.fillRect(2.5, -61, 4, 1.6);
+  } else {
+    c.beginPath(); c.arc(-4, -61, 1.8, 0, 6.283); c.fill();
+    c.beginPath(); c.arc(4.5, -61, 1.8, 0, 6.283); c.fill();
+  }
+  // румянец
+  c.fillStyle = 'rgba(232,128,127,.32)';
+  c.beginPath(); c.arc(-7.5, -56, 3, 0, 6.283); c.fill();
+  c.beginPath(); c.arc(8, -56, 3, 0, 6.283); c.fill();
+  // рот — улыбка тем шире, чем больше терпения
+  c.strokeStyle = '#3B2A22'; c.lineWidth = 1.6;
+  c.beginPath();
+  if(g.patience > 45) c.arc(0.5, -56, 4, .35, Math.PI - .35);
+  else if(g.patience > 20){ c.moveTo(-3, -54); c.lineTo(4, -54); }
+  else c.arc(0.5, -51, 4, Math.PI + .5, -.5);
+  c.stroke();
+
+  c.restore();
+}
+
+/* пузырь с заказом над головой */
+function drawBubble(g){
+  const c = sctx;
+  const d = DRINKS[g.drink];
+  const w = 34 + g.extras.length * 17, h = 26;
+  // Макушка персонажа — на FLOOR_Y-65. Пузырь с хвостиком и полоской терпения
+  // занимает h+16 px, поэтому ставим его так, чтобы низ был выше макушки.
+  const x = g.x - w / 2, y = FLOOR_Y - 128 - (g.sel ? 4 : 0);
+
+  c.fillStyle = g.sel ? '#FFF3E0' : '#FFFBF6';
+  c.strokeStyle = g.sel ? '#C98A4B' : '#E4D3C2';
+  c.lineWidth = g.sel ? 3 : 2;
+  rr(c, x, y, w, h, 9); c.fill(); c.stroke();
+  c.beginPath();
+  c.moveTo(g.x - 5, y + h); c.lineTo(g.x, y + h + 7); c.lineTo(g.x + 5, y + h);
+  c.closePath(); c.fill();
+
+  c.font = '15px "Apple Color Emoji","Segoe UI Emoji",sans-serif';
+  c.textAlign = 'left'; c.textBaseline = 'middle';
+  c.fillText(d.em, x + 8, y + h / 2);
+  g.extras.forEach((k, i) => {
+    c.globalAlpha = (S.stock[k] || 0) > 0 ? 1 : .35;
+    c.fillText(EXTRAS[k].em, x + 28 + i * 17, y + h / 2);
+    c.globalAlpha = 1;
+  });
+  c.textBaseline = 'alphabetic';
+
+  // полоска терпения под пузырём
+  const pw = w - 10;
+  c.fillStyle = '#EADCCB';
+  rr(c, x + 5, y + h + 9, pw, 4, 2); c.fill();
+  c.fillStyle = g.patience > 60 ? '#5CB87F' : g.patience > 30 ? '#F5C86B' : '#E27373';
+  rr(c, x + 5, y + h + 9, pw * g.patience / 100, 4, 2); c.fill();
+}
+
+function rr(c, x, y, w, h, r){
+  c.beginPath();
+  c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+
+/* ---------- цикл сцены ---------- */
+let sceneLast = 0;
+function sceneStep(){
+  if(!sctx){ return; }
+
+  // Шаг по реальному времени: браузер останавливает rAF в скрытой вкладке,
+  // и привязка к кадрам оставила бы гостей стоять в дверях, пока таймер
+  // терпения тикает. Ограничиваем dt, чтобы после долгого перерыва
+  // никто не «телепортировался» через весь зал.
+  const now = performance.now();
+  const dt = Math.min(.1, sceneLast ? (now - sceneLast) / 1000 : .016);
+  sceneLast = now;
+  sceneT += dt * 60;
+
+  const WALK = 80, SLOW = 66, OUT = 96;   // пикселей в секунду
+
+  leaving.forEach(g => { g.x -= OUT * dt; g.dir = -1; });
+  leaving = leaving.filter(g => g.x > DOOR_X - 40);
+
+  guests.forEach((g, i) => {
+    const slot = QUEUE_X[Math.min(i, QUEUE_X.length - 1)];
+    if(g.state === 'walk'){
+      g.dir = 1;
+      g.x += WALK * dt;
+      if(g.x >= slot){ g.x = slot; g.state = 'queue'; }
+    } else if(g.state === 'queue'){
+      // подтягиваемся, когда впереди освободилось место
+      if(g.x < slot - 1){ g.x += SLOW * dt; g.dir = 1; }
+      else if(g.x > slot + 1){ g.x -= SLOW * dt; g.dir = -1; }
+      else g.dir = 1;
+    } else if(g.state === 'leave'){
+      g.dir = -1;
+      g.x -= OUT * dt;
+    }
+  });
+
+  sctx.clearRect(0, 0, SW, SH);
+  drawRoom();
+  // рисуем задних первыми, чтобы передние перекрывали
+  const sorted = guests.concat(leaving).sort((a, b) => a.x - b.x);
+  sorted.forEach(drawPerson);
+  sorted.forEach(g => { if(g.state === 'queue' || g.state === 'walk') drawBubble(g); });
+
+  if(!guests.length){
+    sctx.fillStyle = 'rgba(138,114,102,.9)';
+    sctx.font = '700 13px Nunito, sans-serif';
+    sctx.textAlign = 'center';
+    sctx.fillText('Пока пусто — гости вот-вот зайдут', SW / 2, 296);
+  }
+
+  sceneRAF = requestAnimationFrame(sceneStep);
+}
+
+/* клик по гостю на сцене */
+sceneCv.addEventListener('pointerdown', e => {
+  const r = sceneCv.getBoundingClientRect();
+  const x = (e.clientX - r.left) / sceneScale;
+  const y = (e.clientY - r.top) / sceneScale;
+  // ищем ближайшего, попадание по фигуре и по пузырю
+  let hit = null;
+  guests.forEach(g => {
+    if(Math.abs(g.x - x) < 22 && y > FLOOR_Y - 110 && y < FLOOR_Y + 12) hit = g;
+  });
+  guests.forEach(g => g.sel = false);
+  if(hit){ hit.sel = true; }
+  renderPick(hit);
+});
+
+/* карточка выбранного гостя под сценой */
+function renderPick(g){
+  const box = document.getElementById('pickBox');
+  if(!g){
+    box.innerHTML = guests.length
+      ? '<div class="hintLine">Нажмите на гостя, чтобы принять заказ</div>'
+      : '<div class="hintLine">Гости заходят через дверь. Пока никого — сходите за добавками в мини-игры.</div>';
+    return;
+  }
+  const d = DRINKS[g.drink];
+  const ex = g.extras.map(k => {
+    const have = (S.stock[k] || 0) > 0;
+    return `<span class="chip ${have ? 'have' : 'need'}">${EXTRAS[k].em} ${EXTRAS[k].name}${have ? '' : ' — нет'}</span>`;
+  }).join('') || '<span class="chip">без добавок</span>';
+
+  box.innerHTML = `<div class="pickCard">
+      <div class="face">${g.face}</div>
+      <div class="who">
+        <div class="nm">${g.name}</div>
+        <div class="ord">${d.em} ${d.name} · ${d.price} ₽</div>
+        <div class="ex">${ex}</div>
+      </div>
+      <button class="btn p" data-take="${g.id}" style="padding:12px 16px">Готовить</button>
+    </div>`;
+}
+document.getElementById('pickBox').addEventListener('click', e => {
+  const b = e.target.closest('[data-take]');
+  if(!b) return;
+  const g = guests.find(x => x.id === +b.dataset.take);
   if(!g) return;
-  const missing = g.extras.filter(k => (S.stock[k]||0) <= 0);
+  const missing = g.extras.filter(k => (S.stock[k] || 0) <= 0);
   if(missing.length){
     toast('Нет: ' + missing.map(k => EXTRAS[k].name).join(', ') + '. Выиграйте в мини-играх.');
     go('games'); return;
@@ -481,8 +817,17 @@ document.getElementById('guests').addEventListener('click', e => {
   go('machine');
 });
 
+/* совместимость: старое имя вызывается из нескольких мест */
+function renderHall(){
+  const sel = guests.find(g => g.sel);
+  renderPick(sel || null);
+}
+
 /* терпение тает */
 setInterval(() => {
+  // Пока вкладка скрыта, сцена не рисуется — значит и терпение замораживаем,
+  // иначе игрок вернулся бы к пустому залу не по своей вине.
+  if(document.hidden) return;
   let changed = false;
   guests.forEach(g => {
     g.patience -= (current && current.id === g.id) ? .35 : .8;
@@ -490,6 +835,8 @@ setInterval(() => {
   });
   const gone = guests.filter(g => g.patience <= 0);
   if(gone.length){
+    // разворачиваем к двери и убираем, когда дойдут — иначе исчезали бы на месте
+    gone.forEach(g => { g.state = 'leave'; leaving.push(g); });
     guests = guests.filter(g => g.patience > 0);
     gone.forEach(g => {
       if(current && current.id === g.id){ current = null; }
@@ -902,9 +1249,11 @@ function finish(r){
   S.money += r.pay + r.tip;
   S.served += 1;
   if(r.stars >= 4) S.rep += 1;
+  current.state = 'leave';
+  leaving.push(current);          // уходит довольный, а не растворяется
   guests = guests.filter(g => g.id !== current.id);
   current = null;
-  save(); hud(); renderHall();
+  save(); hud(); renderPick(null);
   toast(`+${r.pay + r.tip} ₽`);
   resetBrew();
   go('hall');
@@ -1343,8 +1692,10 @@ const BUILD = { marsh: marshGame, syrup: syrupGame, beans: beansGame };
 /* =========================================================================
    СТАРТ
    ========================================================================= */
-hud(); renderHall(); renderShop(); renderGames();
+hud(); renderShop(); renderGames();
 setGauge(0);
+if(sctx){ fitScene(); sceneStep(); }
+renderPick(null);
 })();
 </script>
 </body>
