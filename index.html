@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<title>Кофейня — симулятор бариста</title>
+<meta name="description" content="Симулятор работы бариста: настоящая эспрессо-машина, помол, темпер, пролив и взбивание молока. Мини-игры на добавки — зефир, сиропы, топпинги.">
+<meta name="theme-color" content="#F6EDE3">
+<style>
+:root{
+  --cream:#F8F0E7; --cream2:#F0E3D5; --milk:#FFFBF6;
+  --crema:#C98A4B; --crema2:#E0A867; --bean:#4A3229; --bean2:#6B4A3A;
+  --mint:#7CC5B0; --mint2:#5FB49C;
+  --berry:#E8807F; --sun:#F5C86B; --grape:#B49AD1;
+  --ink:#3B2A22; --dim:#8A7266; --line:#E4D3C2;
+  --ok:#5CB87F; --bad:#E27373;
+  --r:18px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none}
+body{
+  background:var(--cream);color:var(--ink);
+  font:16px/1.5 'Nunito','Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+  user-select:none;
+}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+canvas{display:block;touch-action:none}
+
+#app{max-width:480px;margin:0 auto;height:100dvh;height:100vh;
+  display:flex;flex-direction:column;position:relative;
+  background:var(--cream);box-shadow:0 0 50px rgba(74,50,41,.12)}
+
+/* ---------- верхняя панель ---------- */
+.hud{display:flex;align-items:center;gap:8px;padding:10px 14px;
+  background:var(--milk);border-bottom:2px solid var(--line);flex:none;z-index:20}
+.coin{display:flex;align-items:center;gap:5px;font-weight:800;font-size:15px;
+  background:var(--cream2);padding:6px 12px;border-radius:999px}
+.coin small{font-weight:700;color:var(--dim);font-size:12px}
+.hud .day{margin-left:auto;font-size:12.5px;color:var(--dim);font-weight:700;text-align:right;line-height:1.25}
+.hud .day b{display:block;color:var(--ink);font-size:14px}
+
+/* ---------- экраны ---------- */
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;display:none;padding-bottom:78px}
+.screen.on{display:block}
+.pad{padding:16px}
+
+h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
+.sub{color:var(--dim);font-size:13.5px;margin-bottom:14px}
+
+.card{background:var(--milk);border:2px solid var(--line);border-radius:var(--r);
+  padding:16px;margin-bottom:12px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px 22px;border-radius:16px;font-weight:800;font-size:15px;
+  background:var(--cream2);border-bottom:4px solid rgba(74,50,41,.16);
+  transition:transform .08s,filter .15s}
+.btn:active{transform:translateY(2px);border-bottom-width:2px}
+.btn.p{background:var(--crema);color:#fff;border-bottom-color:#A66E37}
+.btn.m{background:var(--mint);color:#fff;border-bottom-color:#4A9C86}
+.btn.block{display:flex;width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* ---------- нижние вкладки ---------- */
+.tabs{position:absolute;bottom:0;left:0;right:0;height:66px;display:flex;
+  background:var(--milk);border-top:2px solid var(--line);z-index:30;
+  padding-bottom:env(safe-area-inset-bottom)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:var(--dim);font-size:10.5px;font-weight:800}
+.tab .ic{font-size:21px;line-height:1}
+.tab.on{color:var(--crema)}
+.tab .badge{position:absolute;top:8px;margin-left:26px;background:var(--berry);color:#fff;
+  font-size:10px;min-width:17px;height:17px;border-radius:9px;display:flex;
+  align-items:center;justify-content:center;font-weight:800;padding:0 4px}
+
+/* ---------- зал: гости ---------- */
+.guest{display:flex;gap:12px;align-items:flex-start;background:var(--milk);
+  border:2px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px;
+  animation:pop .3s ease}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.guest.serving{border-color:var(--crema);background:#FFF7EE}
+.face{width:52px;height:52px;border-radius:50%;flex:none;display:flex;
+  align-items:center;justify-content:center;font-size:27px;background:var(--cream2)}
+.guest .info{flex:1;min-width:0}
+.guest .nm{font-weight:800;font-size:15px}
+.guest .order{font-size:13.5px;color:var(--dim);margin-top:2px}
+.guest .extras{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.chip{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--cream2)}
+.chip.need{background:#FFE9C9;color:#8A5A00}
+.chip.have{background:#DFF3E6;color:#2F7A4E}
+.patience{height:6px;background:var(--cream2);border-radius:3px;overflow:hidden;margin-top:9px}
+.patience i{display:block;height:100%;background:var(--ok);border-radius:3px;transition:width .3s linear}
+.patience.mid i{background:var(--sun)}
+.patience.low i{background:var(--bad)}
+.empty{text-align:center;color:var(--dim);padding:40px 20px;font-size:14px}
+.empty .big{font-size:44px;margin-bottom:10px}
+
+/* ---------- кофемашина ---------- */
+.machine{background:linear-gradient(180deg,#4E5A63,#39434B);border-radius:22px;
+  padding:16px;margin:0 0 12px;box-shadow:inset 0 2px 0 rgba(255,255,255,.14),0 6px 0 #2C343A;
+  position:relative;overflow:hidden}
+.machine:before{content:"";position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.07) 50%,transparent 58%)}
+.mtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;position:relative}
+.brand{color:#fff;font-weight:900;letter-spacing:.12em;font-size:12px;opacity:.85}
+.gauge{width:58px;height:58px;position:relative;flex:none}
+.gauge svg{transform:rotate(-125deg)}
+.gauge .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;color:#fff;font-size:13px;font-weight:900;line-height:1}
+.gauge .val small{font-size:8px;opacity:.7;font-weight:700}
+
+/* группа и портафильтр */
+.group{background:#2E3740;border-radius:14px;padding:14px;position:relative;
+  display:flex;flex-direction:column;align-items:center;gap:8px}
+.groupHead{width:110px;height:16px;background:#59656F;border-radius:6px 6px 3px 3px}
+.pf{width:96px;height:34px;background:#8E9AA3;border-radius:5px 5px 16px 16px;
+  position:relative;display:flex;align-items:flex-end;justify-content:center;
+  transition:transform .35s cubic-bezier(.4,1.4,.5,1)}
+.pf.locked{transform:translateY(-8px) rotate(0deg)}
+.pf.out{transform:translateY(26px) rotate(-8deg)}
+.pf .grounds{width:78px;height:13px;border-radius:3px;background:var(--bean);
+  margin-bottom:4px;transition:.2s}
+.pf .grounds.empty{background:#5A666F}
+.pf .grounds.tamped{background:var(--bean2);box-shadow:inset 0 2px 0 rgba(0,0,0,.25)}
+
+.stream{position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  width:0;display:flex;gap:9px}
+.stream i{display:block;width:3px;height:0;background:linear-gradient(180deg,var(--crema2),var(--crema));
+  border-radius:2px;transition:height .2s}
+.cupZone{margin-top:6px;display:flex;justify-content:center;position:relative;height:74px}
+.cupImg{width:74px;height:64px;position:relative}
+.cupBody{position:absolute;inset:0;background:var(--milk);border:3px solid #D8C6B4;
+  border-radius:8px 8px 30px 30px}
+.cupFill{position:absolute;left:5px;right:5px;bottom:5px;border-radius:4px 4px 24px 24px;
+  background:linear-gradient(180deg,var(--crema2),#6B4326);transition:height .25s}
+.cupHandle{position:absolute;right:-15px;top:16px;width:19px;height:24px;
+  border:3px solid #D8C6B4;border-left:0;border-radius:0 12px 12px 0}
+
+/* панель кнопок машины */
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;position:relative}
+.key{background:#59656F;color:#fff;border-radius:11px;padding:10px 4px;font-size:10.5px;
+  font-weight:800;text-align:center;border-bottom:4px solid #3F4A52;line-height:1.25;
+  transition:transform .07s}
+.key:active{transform:translateY(2px);border-bottom-width:2px}
+.key.on{background:var(--crema);border-bottom-color:#A66E37}
+.key .ic{display:block;font-size:17px;margin-bottom:2px}
+.key:disabled{opacity:.4}
+
+/* шаги */
+.steps{display:flex;gap:5px;margin-bottom:10px}
+.stp{flex:1;text-align:center;font-size:10px;font-weight:800;color:var(--dim);
+  padding:7px 2px;border-radius:10px;background:var(--cream2);line-height:1.3}
+.stp.on{background:var(--crema);color:#fff}
+.stp.done{background:var(--ok);color:#fff}
+
+/* слайдер помола */
+.grindRow{display:flex;align-items:center;gap:10px;margin-top:8px}
+.grindRow input{flex:1;accent-color:var(--crema);height:24px}
+.tag{font-size:11px;font-weight:800;color:var(--dim);white-space:nowrap}
+
+/* индикатор дозы/темпа */
+.meter{height:26px;background:var(--cream2);border-radius:13px;overflow:hidden;position:relative;margin-top:8px}
+.meter i{display:block;height:100%;background:var(--crema);transition:width .05s linear}
+.meter .zone{position:absolute;top:0;bottom:0;background:rgba(92,184,127,.35);
+  border-left:2px dashed var(--ok);border-right:2px dashed var(--ok)}
+.meter .txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:var(--ink)}
+
+/* результат */
+.verdict{text-align:center;padding:18px}
+.verdict .big{font-size:46px;margin-bottom:6px}
+.verdict h3{font-size:22px;font-weight:900;margin-bottom:6px}
+.verdict p{color:var(--dim);font-size:14px;margin-bottom:4px}
+.stars{font-size:26px;letter-spacing:3px;margin:8px 0}
+
+/* ---------- магазин ---------- */
+.shopGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.item{background:var(--milk);border:2px solid var(--line);border-radius:var(--r);
+  padding:14px;text-align:center}
+.item .em{font-size:33px;line-height:1}
+.item .nm{font-weight:800;font-size:13.5px;margin:7px 0 2px}
+.item .cnt{font-size:11.5px;color:var(--dim);margin-bottom:9px}
+.item .buy{width:100%;padding:9px;border-radius:12px;background:var(--cream2);
+  font-weight:800;font-size:12.5px;border-bottom:3px solid rgba(74,50,41,.15)}
+.item .buy:disabled{opacity:.4}
+
+/* ---------- мини-игра ---------- */
+.mgWrap{position:fixed;inset:0;background:rgba(59,42,34,.55);z-index:60;
+  display:flex;align-items:center;justify-content:center;padding:12px;
+  opacity:0;visibility:hidden;transition:.2s}
+.mgWrap.on{opacity:1;visibility:visible}
+.mgBox{background:var(--milk);border-radius:22px;width:min(430px,100%);overflow:hidden;
+  border:3px solid var(--line)}
+.mgTop{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+  background:var(--cream2)}
+.mgTop b{font-size:15px}
+.mgTop .sc{font-weight:900;color:var(--crema)}
+.mgTop button{font-size:22px;line-height:1;color:var(--dim)}
+#mgCanvas{width:100%;background:linear-gradient(180deg,#FFF6EA,#FBE8D4)}
+.mgFoot{padding:11px 16px;font-size:12.5px;color:var(--dim);text-align:center}
+.mgOver{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;background:rgba(255,251,246,.94);padding:20px;text-align:center}
+.mgOver.hide{display:none}
+.mgOver .big{font-size:44px;margin-bottom:8px}
+.mgOver h3{font-size:20px;font-weight:900;margin-bottom:6px}
+.mgOver p{color:var(--dim);font-size:14px;margin-bottom:16px;max-width:30ch}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:70;
+  background:var(--bean);color:#fff;padding:11px 18px;border-radius:14px;
+  font-size:13.5px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;
+  max-width:88%;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+@media(max-height:670px){
+  .cupZone{height:62px}.cupImg{width:64px;height:55px}
+  .machine{padding:12px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="hud">
+    <div class="coin">☕ <span id="money">0</span> <small>₽</small></div>
+    <div class="coin">⭐ <span id="rep">0</span></div>
+    <div class="day">Смена <b id="served">0 гостей</b></div>
+  </div>
+
+  <!-- ЗАЛ -->
+  <section class="screen on" id="s-hall">
+    <div class="pad">
+      <h2>Зал</h2>
+      <div class="sub" id="hallSub">Гости приходят сами. Нажмите на заказ, чтобы встать к машине.</div>
+      <div id="guests"></div>
+    </div>
+  </section>
+
+  <!-- МАШИНА -->
+  <section class="screen" id="s-machine">
+    <div class="pad">
+      <div class="steps" id="steps"></div>
+
+      <div class="machine">
+        <div class="mtop">
+          <span class="brand">BARISTA · PRO</span>
+          <div class="gauge">
+            <svg width="58" height="58" viewBox="0 0 58 58">
+              <circle cx="29" cy="29" r="24" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="5"
+                      stroke-dasharray="113 151" stroke-linecap="round"/>
+              <circle id="gaugeArc" cx="29" cy="29" r="24" fill="none" stroke="#F5C86B" stroke-width="5"
+                      stroke-dasharray="0 264" stroke-linecap="round"/>
+            </svg>
+            <div class="val"><span id="barVal">0</span><small>БАР</small></div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="groupHead"></div>
+          <div class="pf out" id="pf">
+            <div class="grounds empty" id="grounds"></div>
+            <div class="stream" id="stream"><i></i><i></i></div>
+          </div>
+          <div class="cupZone">
+            <div class="cupImg">
+              <div class="cupBody"></div>
+              <div class="cupFill" id="cupFill" style="height:0"></div>
+              <div class="cupHandle"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="keys">
+          <button class="key" id="k-flush"><span class="ic">💧</span>Промыв</button>
+          <button class="key" id="k-lock"><span class="ic">🔒</span>Рожок</button>
+          <button class="key" id="k-brew"><span class="ic">▶</span>Пролив</button>
+          <button class="key" id="k-steam"><span class="ic">♨</span>Пар</button>
+        </div>
+      </div>
+
+      <div class="card" id="stepBox"></div>
+      <button class="btn block" id="backHall">← В зал</button>
+    </div>
+  </section>
+
+  <!-- МИНИ-ИГРЫ -->
+  <section class="screen" id="s-games">
+    <div class="pad">
+      <h2>Мини-игры</h2>
+      <div class="sub">Здесь зарабатываются добавки. Их просят гости — без них заказ выполнить нельзя.</div>
+      <div id="gamesList"></div>
+    </div>
+  </section>
+
+  <!-- СКЛАД -->
+  <section class="screen" id="s-shop">
+    <div class="pad">
+      <h2>Склад добавок</h2>
+      <div class="sub">Можно докупить за деньги, но выгоднее выигрывать в мини-играх.</div>
+      <div class="shopGrid" id="shopGrid"></div>
+    </div>
+  </section>
+
+  <nav class="tabs">
+    <button class="tab on" data-s="hall"><span class="ic">🪑</span>Зал<span class="badge" id="bGuests" hidden>0</span></button>
+    <button class="tab" data-s="machine"><span class="ic">⚙️</span>Машина</button>
+    <button class="tab" data-s="games"><span class="ic">🎮</span>Игры</button>
+    <button class="tab" data-s="shop"><span class="ic">🧺</span>Склад</button>
+  </nav>
+</div>
+
+<div class="mgWrap" id="mgWrap">
+  <div class="mgBox" style="position:relative">
+    <div class="mgTop"><b id="mgName"></b><span class="sc" id="mgScore"></span>
+      <button id="mgClose">✕</button></div>
+    <canvas id="mgCanvas"></canvas>
+    <div class="mgFoot" id="mgHint"></div>
+    <div class="mgOver hide" id="mgOver"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================================
+   ДОБАВКИ
+   ========================================================================= */
+const EXTRAS = {
+  marsh:  { em:'🍡', name:'Зефирки',   price:40 },
+  syrup:  { em:'🍯', name:'Сироп',      price:55 },
+  cream:  { em:'🍦', name:'Сливки',     price:50 },
+  cinn:   { em:'🌰', name:'Корица',     price:30 },
+  choco:  { em:'🍫', name:'Шоколад',    price:60 },
+};
+
+/* Напитки. steam — нужно ли взбивать молоко. */
+const DRINKS = {
+  espresso:   { name:'Эспрессо',   em:'☕', steam:false, price:120 },
+  americano:  { name:'Американо',  em:'🍵', steam:false, price:140 },
+  cappuccino: { name:'Капучино',   em:'🥛', steam:true,  price:190 },
+  latte:      { name:'Латте',      em:'🧋', steam:true,  price:210 },
+  raf:        { name:'Раф',        em:'🍮', steam:true,  price:230 },
+};
+
+const NAMES = ['Аня','Борис','Вика','Гоша','Даша','Егор','Жанна','Захар','Ира','Костя','Лена','Миша','Нина','Олег','Поля','Рома','Соня','Тимур'];
+const FACES = ['🙂','😊','😄','🤗','😌','🥰','😎','🤓','😇','🙃','😺','🐻','🦊','🐰'];
+
+/* =========================================================================
+   СОСТОЯНИЕ
+   ========================================================================= */
+const SAVE = 'coffeeshop.save';
+let S = load();
+
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(SAVE));
+    if(d && typeof d === 'object'){
+      d.stock = Object.assign({marsh:2,syrup:1,cream:1,cinn:2,choco:0}, d.stock||{});
+      return Object.assign({money:150,rep:0,served:0}, d);
+    }
+  }catch(e){}
+  return { money:150, rep:0, served:0, stock:{marsh:2,syrup:1,cream:1,cinn:2,choco:0} };
+}
+function save(){ try{ localStorage.setItem(SAVE, JSON.stringify(S)); }catch(e){} }
+
+let guests = [];
+let current = null;      // обслуживаемый гость
+let guestSeq = 0;
+
+/* =========================================================================
+   ЭКРАНЫ
+   ========================================================================= */
+const screens = {
+  hall: document.getElementById('s-hall'),
+  machine: document.getElementById('s-machine'),
+  games: document.getElementById('s-games'),
+  shop: document.getElementById('s-shop'),
+};
+let tab = 'hall';
+
+function go(name){
+  tab = name;
+  Object.keys(screens).forEach(k => screens[k].classList.toggle('on', k === name));
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.s === name));
+  if(name === 'shop') renderShop();
+  if(name === 'games') renderGames();
+  if(name === 'machine') renderMachine();
+}
+document.querySelectorAll('.tab').forEach(b =>
+  b.addEventListener('click', () => go(b.dataset.s)));
+document.getElementById('backHall').addEventListener('click', () => go('hall'));
+
+function hud(){
+  document.getElementById('money').textContent = Math.round(S.money);
+  document.getElementById('rep').textContent = S.rep;
+  document.getElementById('served').textContent = S.served + ' ' + plural(S.served,'гость','гостя','гостей');
+  const b = document.getElementById('bGuests');
+  b.hidden = guests.length === 0;
+  b.textContent = guests.length;
+}
+function plural(n,a,b,c){
+  const m = n % 10, h = n % 100;
+  if(m===1 && h!==11) return a;
+  if(m>=2 && m<=4 && (h<10||h>=20)) return b;
+  return c;
+}
+
+let toastT = null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove('on'), 2000);
+}
+
+/* =========================================================================
+   ГОСТИ
+   ========================================================================= */
+function spawnGuest(){
+  if(guests.length >= 4) return;
+  const keys = Object.keys(DRINKS);
+  const drink = keys[Math.floor(Math.random()*keys.length)];
+  // сколько добавок просит: чем дороже напиток, тем вероятнее
+  const exKeys = Object.keys(EXTRAS);
+  const want = [];
+  const n = Math.random() < .45 ? 0 : (Math.random() < .75 ? 1 : 2);
+  while(want.length < n){
+    const k = exKeys[Math.floor(Math.random()*exKeys.length)];
+    if(!want.includes(k)) want.push(k);
+  }
+  guests.push({
+    id: ++guestSeq,
+    name: NAMES[Math.floor(Math.random()*NAMES.length)],
+    face: FACES[Math.floor(Math.random()*FACES.length)],
+    drink, extras: want,
+    patience: 100,
+  });
+  renderHall(); hud();
+}
+
+function renderHall(){
+  const box = document.getElementById('guests');
+  if(!guests.length){
+    box.innerHTML = '<div class="empty"><div class="big">🌿</div>Пока никого. Сходите за добавками в мини-игры — скоро придут гости.</div>';
+    return;
+  }
+  box.innerHTML = guests.map(g => {
+    const d = DRINKS[g.drink];
+    const cls = g.patience > 60 ? '' : (g.patience > 30 ? 'mid' : 'low');
+    const ex = g.extras.map(k => {
+      const have = (S.stock[k]||0) > 0;
+      return `<span class="chip ${have?'have':'need'}">${EXTRAS[k].em} ${EXTRAS[k].name}${have?'':' — нет'}</span>`;
+    }).join('');
+    return `<div class="guest${current&&current.id===g.id?' serving':''}" data-g="${g.id}">
+      <div class="face">${g.face}</div>
+      <div class="info">
+        <div class="nm">${g.name}</div>
+        <div class="order">${d.em} ${d.name} · ${d.price} ₽</div>
+        <div class="extras">${ex||'<span class="chip">без добавок</span>'}</div>
+        <div class="patience ${cls}"><i style="width:${g.patience}%"></i></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('guests').addEventListener('click', e => {
+  const el = e.target.closest('[data-g]');
+  if(!el) return;
+  const g = guests.find(x => x.id === +el.dataset.g);
+  if(!g) return;
+  const missing = g.extras.filter(k => (S.stock[k]||0) <= 0);
+  if(missing.length){
+    toast('Нет: ' + missing.map(k => EXTRAS[k].name).join(', ') + '. Выиграйте в мини-играх.');
+    go('games'); return;
+  }
+  current = g;
+  resetBrew();
+  go('machine');
+});
+
+/* терпение тает */
+setInterval(() => {
+  let changed = false;
+  guests.forEach(g => {
+    g.patience -= (current && current.id === g.id) ? .35 : .8;
+    changed = true;
+  });
+  const gone = guests.filter(g => g.patience <= 0);
+  if(gone.length){
+    guests = guests.filter(g => g.patience > 0);
+    gone.forEach(g => {
+      if(current && current.id === g.id){ current = null; }
+      S.rep = Math.max(0, S.rep - 1);
+    });
+    toast(gone.length === 1 ? 'Гость ушёл не дождавшись 😔' : 'Гости ушли не дождавшись 😔');
+    save();
+  }
+  if(changed && tab === 'hall') renderHall();
+  hud();
+}, 1000);
+
+/* приход гостей */
+setInterval(() => { if(Math.random() < .55) spawnGuest(); }, 7000);
+setTimeout(spawnGuest, 900);
+
+/* =========================================================================
+   КОФЕМАШИНА
+   Шаги повторяют реальный цикл: помол → темпер → фиксация рожка →
+   пролив → (для молочных) пар.
+   ========================================================================= */
+const STEP_LIST = [
+  {id:'grind', t:'Помол'},
+  {id:'tamp',  t:'Темпер'},
+  {id:'lock',  t:'Рожок'},
+  {id:'brew',  t:'Пролив'},
+  {id:'steam', t:'Молоко'},
+  {id:'serve', t:'Подача'},
+];
+
+let B = null;   // состояние текущего приготовления
+function resetBrew(){
+  B = {
+    step:'grind',
+    grindSize:5,      // 1 тонкий … 9 грубый
+    dose:0,           // граммы в корзине
+    tampQuality:0,    // 0..1
+    yield:0,          // граммы в чашке
+    brewTime:0,
+    pressure:0,
+    milkTemp:20,
+    milkFoam:0,
+    milkQuality:0,
+    scores:{},
+  };
+}
+resetBrew();
+
+function renderMachine(){
+  if(!current){
+    document.getElementById('steps').innerHTML = '';
+    document.getElementById('stepBox').innerHTML =
+      '<div class="empty"><div class="big">👋</div>Выберите гостя в зале — и начнём готовить.</div>';
+    setKeys({});
+    return;
+  }
+  const need = DRINKS[current.drink].steam;
+  const list = STEP_LIST.filter(s => s.id !== 'steam' || need);
+  const idx = list.findIndex(s => s.id === B.step);
+  document.getElementById('steps').innerHTML = list.map((s,i) =>
+    `<div class="stp ${i===idx?'on':(i<idx?'done':'')}">${s.t}</div>`).join('');
+  drawStep();
+}
+
+function setKeys(state){
+  ['flush','lock','brew','steam'].forEach(k => {
+    const el = document.getElementById('k-'+k);
+    el.disabled = !state[k];
+    el.classList.toggle('on', !!state[k+'On']);
+  });
+}
+
+function setGauge(bar){
+  const pct = Math.max(0, Math.min(1, bar/15));
+  document.getElementById('gaugeArc').setAttribute('stroke-dasharray', (pct*113) + ' 264');
+  document.getElementById('barVal').textContent = bar.toFixed(1);
+  const c = bar >= 8 && bar <= 10 ? '#7CC5B0' : (bar > 0 ? '#F5C86B' : '#F5C86B');
+  document.getElementById('gaugeArc').setAttribute('stroke', c);
+}
+
+const stepBox = document.getElementById('stepBox');
+
+function drawStep(){
+  const g = current, d = DRINKS[g.drink];
+
+  /* ---------- ПОМОЛ ---------- */
+  if(B.step === 'grind'){
+    setKeys({});
+    document.getElementById('grounds').className = 'grounds empty';
+    document.getElementById('pf').className = 'pf out';
+    stepBox.innerHTML = `
+      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">1 · Помол</h3>
+      <div class="sub" style="margin-bottom:10px">Держите кнопку, пока в корзину не намелется <b>18 г</b>.
+        Тонкость помола решает, как быстро пойдёт вода.</div>
+      <div class="grindRow">
+        <span class="tag">тоньше</span>
+        <input type="range" id="grind" min="1" max="9" step="1" value="${B.grindSize}">
+        <span class="tag">грубее</span>
+      </div>
+      <div class="tag" style="text-align:center;margin-top:2px">помол: <b id="gsz">${grindWord(B.grindSize)}</b></div>
+      <div class="meter">
+        <div class="zone" style="left:${17.5/25*100}%;width:${1/25*100}%"></div>
+        <i id="doseBar" style="width:${B.dose/25*100}%"></i>
+        <div class="txt"><span id="doseTxt">${B.dose.toFixed(1)}</span> г из 18</div>
+      </div>
+      <button class="btn p block" id="grindBtn" style="margin-top:12px">Держать — молоть</button>`;
+
+    const gr = document.getElementById('grind');
+    gr.addEventListener('input', () => {
+      B.grindSize = +gr.value;
+      document.getElementById('gsz').textContent = grindWord(B.grindSize);
+    });
+
+    const btn = document.getElementById('grindBtn');
+    let timer = null, last = 0;
+    // Считаем по прошедшему времени, а не по числу срабатываний таймера:
+    // в фоновой вкладке и на слабом телефоне интервалы тротлятся, и привязка
+    // к тикам ломает всю механику — доза набиралась бы в разы медленнее.
+    const GRIND_PER_SEC = 11.25;
+    const start = e => {
+      e.preventDefault();
+      if(timer) return;
+      last = performance.now();
+      timer = setInterval(() => {
+        const now = performance.now();
+        B.dose = Math.min(25, B.dose + GRIND_PER_SEC * (now - last) / 1000);
+        last = now;
+        document.getElementById('doseBar').style.width = (B.dose/25*100)+'%';
+        document.getElementById('doseTxt').textContent = B.dose.toFixed(1);
+        if(B.dose >= 25) stop();
+      }, 30);
+    };
+    const stop = () => {
+      if(!timer) return;
+      clearInterval(timer); timer = null;
+      if(B.dose < 8){ toast('Слишком мало — досыпьте'); return; }
+      B.scores.dose = 1 - Math.min(1, Math.abs(B.dose - 18) / 6);
+      B.step = 'tamp';
+      renderMachine();
+    };
+    btn.addEventListener('pointerdown', start);
+    btn.addEventListener('pointerup', stop);
+    btn.addEventListener('pointerleave', stop);
+    btn.addEventListener('pointercancel', stop);
+    return;
+  }
+
+  /* ---------- ТЕМПЕР ---------- */
+  if(B.step === 'tamp'){
+    setKeys({});
+    document.getElementById('grounds').className = 'grounds';
+    stepBox.innerHTML = `
+      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">2 · Темпер</h3>
+      <div class="sub" style="margin-bottom:10px">Прижмите кофе ровно, с усилием <b>15–20 кг</b>.
+        Слабо — вода пробьёт канал, сильно — пролив встанет.</div>
+      <div class="meter">
+        <div class="zone" style="left:${15/30*100}%;width:${5/30*100}%"></div>
+        <i id="tampBar" style="width:0"></i>
+        <div class="txt"><span id="tampTxt">0</span> кг</div>
+      </div>
+      <button class="btn p block" id="tampBtn" style="margin-top:12px">Держать — прижимать</button>`;
+
+    const btn = document.getElementById('tampBtn');
+    let force = 0, timer = null, last = 0;
+    const FORCE_PER_SEC = 18.5;
+    const start = e => {
+      e.preventDefault();
+      if(timer) return;
+      last = performance.now();
+      timer = setInterval(() => {
+        const now = performance.now();
+        force = Math.min(30, force + FORCE_PER_SEC * (now - last) / 1000);
+        last = now;
+        document.getElementById('tampBar').style.width = (force/30*100)+'%';
+        document.getElementById('tampTxt').textContent = force.toFixed(0);
+      }, 30);
+    };
+    const stop = () => {
+      if(!timer) return;
+      clearInterval(timer); timer = null;
+      const q = 1 - Math.min(1, Math.abs(force - 17.5) / 12);
+      B.tampQuality = q;
+      B.scores.tamp = q;
+      document.getElementById('grounds').className = 'grounds tamped';
+      B.step = 'lock';
+      renderMachine();
+    };
+    btn.addEventListener('pointerdown', start);
+    btn.addEventListener('pointerup', stop);
+    btn.addEventListener('pointerleave', stop);
+    return;
+  }
+
+  /* ---------- ФИКСАЦИЯ РОЖКА ---------- */
+  if(B.step === 'lock'){
+    setKeys({flush:true, lock:true});
+    stepBox.innerHTML = `
+      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">3 · Рожок в группу</h3>
+      <div class="sub">Сначала <b>промойте группу</b> — смывает старую гущу и стабилизирует
+        температуру. Потом вставьте рожок и проверните вправо до упора.</div>
+      <div class="tag" style="text-align:center;margin-top:10px" id="lockHint">
+        💧 Нажмите «Промыв» на машине</div>`;
+    return;
+  }
+
+  /* ---------- ПРОЛИВ ---------- */
+  if(B.step === 'brew'){
+    setKeys({brew:true});
+    stepBox.innerHTML = `
+      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">4 · Пролив</h3>
+      <div class="sub">Цель — <b>36 г за 25–30 секунд</b>. Нажмите «Пролив» и остановите вовремя.
+        Струя должна идти как мышиный хвост.</div>
+      <div class="meter">
+        <div class="zone" style="left:${32/50*100}%;width:${8/50*100}%"></div>
+        <i id="yieldBar" style="width:0"></i>
+        <div class="txt"><span id="yieldTxt">0.0</span> г · <span id="timeTxt">0.0</span> с</div>
+      </div>
+      <div class="tag" style="text-align:center;margin-top:8px" id="brewHint">Ждём запуска</div>`;
+    return;
+  }
+
+  /* ---------- МОЛОКО ---------- */
+  if(B.step === 'steam'){
+    setKeys({steam:true});
+    stepBox.innerHTML = `
+      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">5 · Молоко</h3>
+      <div class="sub">Держите пар. Сначала «затягиваем воздух» — растёт пена.
+        После <b>37 °C</b> пена больше не нужна, крутим воронку до <b>60–65 °C</b>.
+        Выше 70 °C молоко сгорит.</div>
+      <div class="meter">
+        <div class="zone" style="left:${60/85*100}%;width:${5/85*100}%"></div>
+        <i id="tempBar" style="width:${B.milkTemp/85*100}%;background:var(--berry)"></i>
+        <div class="txt"><span id="tempTxt">${B.milkTemp|0}</span> °C</div>
+      </div>
+      <div class="meter" style="height:16px;margin-top:6px">
+        <i id="foamBar" style="width:0;background:var(--mint)"></i>
+        <div class="txt" style="font-size:10.5px">пена</div>
+      </div>
+      <div class="tag" style="text-align:center;margin-top:8px" id="steamHint">Нажмите «Пар» и держите</div>`;
+    return;
+  }
+
+  /* ---------- ПОДАЧА ---------- */
+  if(B.step === 'serve'){
+    setKeys({});
+    const r = evaluate();
+    stepBox.innerHTML = `
+      <div class="verdict">
+        <div class="big">${r.face}</div>
+        <h3>${r.title}</h3>
+        <div class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+        <p>${r.notes.join('<br>')}</p>
+        <p style="margin-top:10px;color:var(--ink);font-weight:800">
+          +${r.pay} ₽${r.tip ? ' · чаевые +' + r.tip + ' ₽' : ''}</p>
+      </div>
+      <button class="btn m block" id="serveBtn">Подать гостю</button>`;
+    document.getElementById('serveBtn').addEventListener('click', () => finish(r));
+    return;
+  }
+}
+
+function grindWord(v){
+  return ['','очень тонкий','тонкий','тонкий','средне-тонкий','средний','средне-грубый','грубый','грубый','очень грубый'][v];
+}
+
+/* ---------- кнопки машины ---------- */
+document.getElementById('k-flush').addEventListener('click', () => {
+  if(B.step !== 'lock') return;
+  flowAnim(700, .25);
+  B.flushed = true;
+  document.getElementById('lockHint').innerHTML = '🔒 Теперь нажмите «Рожок» — вставить и провернуть';
+});
+
+document.getElementById('k-lock').addEventListener('click', () => {
+  if(B.step !== 'lock') return;
+  if(!B.flushed){ toast('Сначала промойте группу'); return; }
+  document.getElementById('pf').className = 'pf locked';
+  B.step = 'brew';
+  setTimeout(renderMachine, 380);
+});
+
+let brewTimer = null;
+document.getElementById('k-brew').addEventListener('click', () => {
+  if(B.step !== 'brew') return;
+  if(brewTimer){ stopBrew(); return; }
+  startBrew();
+});
+
+function startBrew(){
+  document.getElementById('k-brew').classList.add('on');
+  document.getElementById('brewHint').textContent = 'Идёт пролив — нажмите ещё раз, чтобы остановить';
+  const stream = document.getElementById('stream');
+  [...stream.children].forEach(i => i.style.height = '26px');
+
+  // Скорость пролива зависит от помола и темпера — как в жизни.
+  // Тонкий помол и плотный темп тормозят воду.
+  const resist = (10 - B.grindSize) * .12 + B.tampQuality * .35;
+  // Подобрано так, чтобы средний помол (5) с ровным темпером давал
+  // эталонные 36 г за ~27 с. Тоньше — дольше и горчит, грубее — быстро и кисло.
+  const rate = 1.26 / Math.max(.55, resist);   // г/с
+
+  const t0 = performance.now();
+  let lastB = t0;
+  brewTimer = setInterval(() => {
+    const now = performance.now();
+    B.brewTime = (now - t0) / 1000;
+    B.yield = Math.min(60, B.yield + rate * (now - lastB) / 1000);
+    lastB = now;
+    B.pressure = Math.min(11, 3 + resist * 7 + Math.sin(B.brewTime*3)*.25);
+    setGauge(B.pressure);
+    document.getElementById('yieldBar').style.width = (B.yield/50*100)+'%';
+    document.getElementById('yieldTxt').textContent = B.yield.toFixed(1);
+    document.getElementById('timeTxt').textContent = B.brewTime.toFixed(1);
+    document.getElementById('cupFill').style.height = Math.min(52, B.yield*1.35) + 'px';
+    if(B.yield >= 60) stopBrew();
+  }, 50);
+}
+
+function stopBrew(){
+  clearInterval(brewTimer); brewTimer = null;
+  document.getElementById('k-brew').classList.remove('on');
+  [...document.getElementById('stream').children].forEach(i => i.style.height = '0');
+  setGauge(0);
+
+  B.scores.yield = 1 - Math.min(1, Math.abs(B.yield - 36) / 18);
+  B.scores.time  = 1 - Math.min(1, Math.abs(B.brewTime - 27.5) / 15);
+
+  B.step = DRINKS[current.drink].steam ? 'steam' : 'serve';
+  renderMachine();
+}
+
+let steamTimer = null;
+document.getElementById('k-steam').addEventListener('click', () => {
+  if(B.step !== 'steam') return;
+  if(steamTimer){ stopSteam(); return; }
+  startSteam();
+});
+
+function startSteam(){
+  document.getElementById('k-steam').classList.add('on');
+  document.getElementById('steamHint').textContent = 'Пар идёт — остановите на 60–65 °C';
+  let lastS = performance.now();
+  const TEMP_PER_SEC = 11.5, FOAM_PER_SEC = 25;
+  steamTimer = setInterval(() => {
+    const now = performance.now(), dt = (now - lastS) / 1000;
+    lastS = now;
+    B.milkTemp += TEMP_PER_SEC * dt;
+    // воздух затягивается только пока молоко холодное — как в реальности
+    if(B.milkTemp < 37) B.milkFoam = Math.min(100, B.milkFoam + FOAM_PER_SEC * dt);
+    document.getElementById('tempBar').style.width = (B.milkTemp/85*100)+'%';
+    document.getElementById('tempTxt').textContent = B.milkTemp|0;
+    document.getElementById('foamBar').style.width = B.milkFoam + '%';
+    if(B.milkTemp >= 85) stopSteam();
+  }, 60);
+}
+
+function stopSteam(){
+  clearInterval(steamTimer); steamTimer = null;
+  document.getElementById('k-steam').classList.remove('on');
+  const tempScore = 1 - Math.min(1, Math.abs(B.milkTemp - 62) / 20);
+  const foamScore = 1 - Math.min(1, Math.abs(B.milkFoam - 55) / 55);
+  B.scores.milk = (tempScore * .65 + foamScore * .35);
+  B.step = 'serve';
+  renderMachine();
+}
+
+function flowAnim(ms, h){
+  const stream = document.getElementById('stream');
+  [...stream.children].forEach(i => i.style.height = (26*h)+'px');
+  setTimeout(() => [...stream.children].forEach(i => i.style.height = '0'), ms);
+}
+
+/* ---------- оценка ---------- */
+function evaluate(){
+  const sc = B.scores;
+  const parts = [sc.dose, sc.tamp, sc.yield, sc.time];
+  if(sc.milk != null) parts.push(sc.milk);
+  const avg = parts.reduce((a,b) => a + (b||0), 0) / parts.length;
+
+  const notes = [];
+  if(sc.dose < .6) notes.push(B.dose < 18 ? 'Мало кофе в корзине — вкус пустой' : 'Переполнена корзина');
+  if(sc.tamp < .6) notes.push(B.tampQuality < .5 ? 'Темпер неровный — вода нашла канал' : 'Пережали темпер');
+  if(B.brewTime < 20) notes.push('Пролив быстрый — кисло, недоэкстракция');
+  else if(B.brewTime > 35) notes.push('Пролив долгий — горчит');
+  if(B.yield < 28) notes.push('Мало в чашке — концентрат');
+  else if(B.yield > 44) notes.push('Перелив — вкус водянистый');
+  if(sc.milk != null){
+    if(B.milkTemp > 70) notes.push('Молоко перегрето — привкус варёного');
+    else if(B.milkTemp < 55) notes.push('Молоко недогрето');
+    if(B.milkFoam < 25) notes.push('Пены почти нет');
+    else if(B.milkFoam > 80) notes.push('Пена как мыло — слишком много воздуха');
+  }
+  if(!notes.length) notes.push('Всё по регламенту. Крема плотная, вкус сбалансирован.');
+
+  const stars = Math.max(1, Math.min(5, Math.round(avg * 5)));
+  const base = DRINKS[current.drink].price;
+  const extrasPay = current.extras.length * 25;
+  const pay = Math.round(base * (.55 + avg * .45)) + extrasPay;
+  const tip = stars >= 4 ? Math.round(base * .15 * (stars - 3)) : 0;
+
+  return {
+    stars, pay, tip, notes, avg,
+    face: stars >= 5 ? '🤩' : stars >= 4 ? '😊' : stars >= 3 ? '🙂' : stars >= 2 ? '😕' : '😖',
+    title: stars >= 5 ? 'Идеально!' : stars >= 4 ? 'Хорошо' : stars >= 3 ? 'Сойдёт' : stars >= 2 ? 'Так себе' : 'Мимо',
+  };
+}
+
+function finish(r){
+  current.extras.forEach(k => { S.stock[k] = Math.max(0, (S.stock[k]||0) - 1); });
+  S.money += r.pay + r.tip;
+  S.served += 1;
+  if(r.stars >= 4) S.rep += 1;
+  guests = guests.filter(g => g.id !== current.id);
+  current = null;
+  save(); hud(); renderHall();
+  toast(`+${r.pay + r.tip} ₽`);
+  resetBrew();
+  go('hall');
+}
+
+/* =========================================================================
+   СКЛАД
+   ========================================================================= */
+function renderShop(){
+  document.getElementById('shopGrid').innerHTML = Object.keys(EXTRAS).map(k => {
+    const e = EXTRAS[k], have = S.stock[k]||0;
+    return `<div class="item">
+      <div class="em">${e.em}</div>
+      <div class="nm">${e.name}</div>
+      <div class="cnt">в наличии: ${have}</div>
+      <button class="buy" data-buy="${k}" ${S.money < e.price ? 'disabled' : ''}>${e.price} ₽</button>
+    </div>`;
+  }).join('');
+}
+document.getElementById('shopGrid').addEventListener('click', e => {
+  const b = e.target.closest('[data-buy]');
+  if(!b) return;
+  const k = b.dataset.buy, price = EXTRAS[k].price;
+  if(S.money < price){ toast('Не хватает денег'); return; }
+  S.money -= price;
+  S.stock[k] = (S.stock[k]||0) + 1;
+  save(); hud(); renderShop();
+  toast(EXTRAS[k].name + ' +1');
+});
+
+/* =========================================================================
+   МИНИ-ИГРЫ
+   ========================================================================= */
+const GAMES = [
+  { id:'marsh', name:'Лови зефирки', em:'🍡', reward:'marsh',
+    desc:'Ловите падающие зефирки чашкой кофе. Промах — минус жизнь.',
+    hint:'Двигайте палец или мышь · 30 секунд · лёд ловить нельзя' },
+  { id:'syrup', name:'Точный сироп', em:'🍯', reward:'syrup',
+    desc:'Остановите налив ровно на отметке. Пять раз подряд.',
+    hint:'Нажмите, когда полоса войдёт в зелёную зону' },
+  { id:'beans', name:'Перебор зёрен', em:'🌰', reward:'cinn',
+    desc:'Уберите с ленты пережаренные зёрна, хорошие не трогайте.',
+    hint:'Нажимайте только на тёмные зёрна' },
+];
+
+function renderGames(){
+  document.getElementById('gamesList').innerHTML = GAMES.map(g => `
+    <div class="card" style="display:flex;gap:13px;align-items:center">
+      <div style="font-size:34px">${g.em}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:800;font-size:15px">${g.name}</div>
+        <div style="font-size:13px;color:var(--dim);margin-top:2px">${g.desc}</div>
+        <div style="font-size:11.5px;color:var(--crema);font-weight:800;margin-top:5px">
+          награда: ${EXTRAS[g.reward].em} ${EXTRAS[g.reward].name}</div>
+      </div>
+      <button class="btn p" data-play="${g.id}" style="padding:11px 16px">Играть</button>
+    </div>`).join('');
+}
+document.getElementById('gamesList').addEventListener('click', e => {
+  const b = e.target.closest('[data-play]');
+  if(b) openGame(b.dataset.play);
+});
+
+const mgWrap = document.getElementById('mgWrap');
+const mgCanvas = document.getElementById('mgCanvas');
+const mgOver = document.getElementById('mgOver');
+const ctx = mgCanvas.getContext ? mgCanvas.getContext('2d') : null;
+let RAF = null, GAME = null, VW = 0, VH = 0, DPR = 1;
+
+document.getElementById('mgClose').addEventListener('click', closeGame);
+mgWrap.addEventListener('click', e => { if(e.target === mgWrap) closeGame(); });
+
+function fit(w, h){
+  const box = mgCanvas.parentElement.getBoundingClientRect();
+  DPR = Math.min(devicePixelRatio||1, 2);
+  VW = Math.floor(box.width);
+  VH = Math.round(VW * h / w);
+  const maxH = Math.round(innerHeight * .58);
+  if(VH > maxH){ VH = maxH; }
+  mgCanvas.width = VW*DPR; mgCanvas.height = VH*DPR;
+  mgCanvas.style.height = VH+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+
+function openGame(id){
+  const g = GAMES.find(x => x.id === id);
+  if(!g || !ctx){ toast('Игра недоступна в этом браузере'); return; }
+  document.getElementById('mgName').textContent = g.name;
+  document.getElementById('mgHint').textContent = g.hint;
+  mgOver.classList.add('hide');
+  mgWrap.classList.add('on');
+  requestAnimationFrame(() => {
+    GAME = BUILD[id](g);
+    (function loop(){ if(!GAME) return; GAME.step(); RAF = requestAnimationFrame(loop); })();
+  });
+}
+function closeGame(){
+  if(RAF) cancelAnimationFrame(RAF);
+  RAF = null;
+  if(GAME && GAME.stop) GAME.stop();
+  GAME = null;
+  mgWrap.classList.remove('on');
+}
+function gameOver(title, txt, won, reward, count){
+  if(RAF) cancelAnimationFrame(RAF); RAF = null;
+  if(GAME && GAME.stop) GAME.stop();
+  if(won && count > 0){
+    S.stock[reward] = (S.stock[reward]||0) + count;
+    save(); hud();
+  }
+  mgOver.classList.remove('hide');
+  mgOver.innerHTML = `
+    <div class="big">${won ? '🎉' : '💤'}</div>
+    <h3>${title}</h3>
+    <p>${txt}</p>
+    ${won && count > 0 ? `<div class="chip have" style="font-size:14px;padding:8px 16px;margin-bottom:14px">
+       ${EXTRAS[reward].em} ${EXTRAS[reward].name} +${count}</div>` : ''}
+    <button class="btn p" id="mgAgain">Ещё раз</button>
+    <button class="btn" id="mgExit" style="margin-top:8px">Закрыть</button>`;
+  const id = GAME && GAME.id;
+  document.getElementById('mgAgain').addEventListener('click', () => { GAME = null; openGame(id); });
+  document.getElementById('mgExit').addEventListener('click', closeGame);
+  GAME = null;
+}
+
+/* ---------- 1. ЛОВИ ЗЕФИРКИ ---------- */
+function marshGame(meta){
+  const W = 400, H = 300;
+  fit(W, H);
+  const k = () => VW / W;
+  const self = { id:'marsh' };
+  // Раунд на время, а не на жизни: при плотном потоке поймать всё физически
+  // невозможно, и отнимать жизнь за пропуск — значит наказывать за то,
+  // на что игрок не влияет. Пропуск просто не приносит очков,
+  // а штрафует только пойманный лёд.
+  let cupX = W/2, items = [], score = 0, t = 0, spawn = 0;
+  const ROUND = 30;
+  const tStart = performance.now();
+  let timeLeft = ROUND;
+
+  const move = e => {
+    const r = mgCanvas.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    cupX = Math.max(30, Math.min(W-30, x / k()));
+    if(e.touches) e.preventDefault();
+  };
+  mgCanvas.addEventListener('mousemove', move);
+  mgCanvas.addEventListener('touchmove', move, {passive:false});
+  mgCanvas.addEventListener('touchstart', move, {passive:false});
+  self.stop = () => {
+    mgCanvas.removeEventListener('mousemove', move);
+    mgCanvas.removeEventListener('touchmove', move);
+    mgCanvas.removeEventListener('touchstart', move);
+  };
+
+  self.step = function(){
+    t++;
+    timeLeft = Math.max(0, ROUND - (performance.now() - tStart)/1000);
+    if(timeLeft <= 0) return end();
+    // спавн: зефирки и изредка кубик льда (ловить нельзя)
+    if(--spawn <= 0){
+      spawn = Math.max(15, 44 - t/45);
+      items.push({
+        x: 26 + Math.random()*(W-52), y:-16,
+        v: 2.3 + Math.random()*1.5 + t/1500,
+        bad: Math.random() < .18,
+        r: 11 + Math.random()*3,
+        rot: Math.random()*6,
+      });
+    }
+    for(let i = items.length-1; i >= 0; i--){
+      const o = items[i];
+      o.y += o.v; o.rot += .05;
+      // поймано?
+      if(o.y > H-56 && o.y < H-26 && Math.abs(o.x - cupX) < 26){
+        items.splice(i,1);
+        if(o.bad) score = Math.max(0, score - 3);   // лёд в кофе — минус
+        else score++;
+        continue;
+      }
+      if(o.y > H+20) items.splice(i,1);            // пропуск не штрафуется
+    }
+    draw();
+  };
+
+  function end(){
+    // Пороги выставлены по прогону: идеальная игра даёт около 45–50,
+    // поэтому три добавки — награда за действительно чистый раунд.
+    const count = score >= 55 ? 3 : score >= 38 ? 2 : score >= 22 ? 1 : 0;
+    gameOver(count ? 'Поймано!' : 'Не хватило',
+      `Собрано зефирок: ${score}. ` + (count ? 'Забирайте в склад.' : 'Нужно хотя бы 22 за раунд.'),
+      count > 0, 'marsh', count);
+  }
+
+  function draw(){
+    const s = k();
+    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
+    ctx.clearRect(0,0,W,H);
+
+    // зефирки
+    items.forEach(o => {
+      ctx.save(); ctx.translate(o.x,o.y); ctx.rotate(o.rot);
+      if(o.bad){
+        ctx.fillStyle = '#BFE3F2';
+        roundRect(-o.r,-o.r,o.r*2,o.r*2,4); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; ctx.stroke();
+      } else {
+        ctx.fillStyle = ['#FFD9E4','#FFF2D5','#E7F5D8'][Math.floor(o.rot)%3];
+        roundRect(-o.r,-o.r*.75,o.r*2,o.r*1.5,o.r*.7); ctx.fill();
+        ctx.strokeStyle = 'rgba(200,150,160,.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+      ctx.restore();
+    });
+
+    // чашка
+    ctx.save(); ctx.translate(cupX, H-40);
+    ctx.fillStyle = '#6B4326';
+    ctx.beginPath(); ctx.ellipse(0,-6,26,7,0,0,6.283); ctx.fill();
+    ctx.fillStyle = '#FFFBF6';
+    ctx.beginPath();
+    ctx.moveTo(-29,-8); ctx.lineTo(29,-8);
+    ctx.quadraticCurveTo(26,26, 0,26);
+    ctx.quadraticCurveTo(-26,26, -29,-8);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#D8C6B4'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.beginPath(); ctx.arc(36,2,10,-1.1,1.1); ctx.stroke();
+    // пар
+    ctx.strokeStyle = 'rgba(180,150,130,.35)'; ctx.lineWidth = 2.5;
+    for(let i=-1;i<2;i++){
+      ctx.beginPath();
+      ctx.moveTo(i*11,-12);
+      ctx.quadraticCurveTo(i*11+Math.sin(t/14+i)*6,-24, i*11,-34);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // счёт и жизни
+    ctx.fillStyle = '#8A7266';
+    ctx.font = '700 13px Nunito, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Зефирки: ' + score, 12, 22);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = timeLeft <= 6 ? '#E27373' : '#8A7266';
+    ctx.fillText(timeLeft.toFixed(0) + ' с', W-12, 22);
+    document.getElementById('mgScore').textContent = score;
+  }
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  return self;
+}
+
+/* ---------- 2. ТОЧНЫЙ СИРОП ---------- */
+function syrupGame(){
+  const W = 400, H = 260;
+  fit(W, H);
+  const k = () => VW / W;
+  const self = { id:'syrup' };
+  let pos = 0, dir = 1, speed = 1.6, round = 0, hits = 0, done = false;
+  const TARGET = { c: 0, w: 0 };
+  newRound();
+
+  function newRound(){
+    TARGET.w = Math.max(9, 20 - round*2);
+    TARGET.c = 25 + Math.random()*50;
+    speed = 1.5 + round*.35;
+    pos = 0; dir = 1;
+  }
+
+  const tap = e => {
+    e.preventDefault();
+    if(done) return;
+    const diff = Math.abs(pos - TARGET.c);
+    if(diff <= TARGET.w/2){ hits++; }
+    round++;
+    if(round >= 5){ done = true; return end(); }
+    newRound();
+  };
+  mgCanvas.addEventListener('pointerdown', tap);
+  self.stop = () => mgCanvas.removeEventListener('pointerdown', tap);
+
+  self.step = function(){
+    if(!done){
+      pos += dir * speed;
+      if(pos >= 100){ pos = 100; dir = -1; }
+      if(pos <= 0){ pos = 0; dir = 1; }
+    }
+    draw();
+  };
+
+  function end(){
+    const count = hits >= 5 ? 3 : hits >= 4 ? 2 : hits >= 3 ? 1 : 0;
+    gameOver(count ? 'Налито ровно!' : 'Мимо меры',
+      `Точных наливов: ${hits} из 5.` + (count ? '' : ' Нужно хотя бы 3.'),
+      count > 0, 'syrup', count);
+  }
+
+  function draw(){
+    const s = k();
+    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
+    ctx.clearRect(0,0,W,H);
+
+    // бутылка сиропа
+    ctx.fillStyle = '#E0A867';
+    roundRect2(30, 40, 46, 86, 8); ctx.fill();
+    ctx.fillStyle = '#C98A4B';
+    roundRect2(42, 26, 22, 18, 4); ctx.fill();
+
+    // стакан
+    ctx.strokeStyle = '#D8C6B4'; ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(250,60); ctx.lineTo(258,170);
+    ctx.lineTo(322,170); ctx.lineTo(330,60);
+    ctx.stroke();
+    const fillH = 105 * (pos/100);
+    ctx.fillStyle = 'rgba(224,168,103,.75)';
+    ctx.fillRect(258, 168-fillH, 64, fillH);
+
+    // шкала
+    const barY = 205, barX = 40, barW = W-80;
+    ctx.fillStyle = '#F0E3D5';
+    roundRect2(barX, barY, barW, 22, 11); ctx.fill();
+    ctx.fillStyle = 'rgba(124,197,176,.55)';
+    const zx = barX + barW*(TARGET.c - TARGET.w/2)/100;
+    ctx.fillRect(zx, barY, barW*TARGET.w/100, 22);
+    ctx.fillStyle = '#C98A4B';
+    const px = barX + barW*pos/100;
+    roundRect2(px-4, barY-5, 8, 32, 4); ctx.fill();
+
+    ctx.fillStyle = '#8A7266';
+    ctx.font = '700 13px Nunito, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Налив ${Math.min(round+1,5)} из 5`, 12, 22);
+    ctx.textAlign = 'right';
+    ctx.fillText('точно: ' + hits, W-12, 22);
+    document.getElementById('mgScore').textContent = hits + '/5';
+  }
+  function roundRect2(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  return self;
+}
+
+/* ---------- 3. ПЕРЕБОР ЗЁРЕН ---------- */
+function beansGame(){
+  const W = 400, H = 280;
+  fit(W, H);
+  const k = () => VW / W;
+  const self = { id:'beans' };
+  let beans = [], t = 0, good = 0, mistakes = 0, spawn = 0, left = 100*60/60;
+  let timeLeft = 30;
+
+  const tap = e => {
+    e.preventDefault();
+    const r = mgCanvas.getBoundingClientRect();
+    const x = ((e.touches?e.touches[0].clientX:e.clientX) - r.left) / k();
+    const y = ((e.touches?e.touches[0].clientY:e.clientY) - r.top) / k();
+    for(let i = beans.length-1; i >= 0; i--){
+      const b = beans[i];
+      if(Math.hypot(b.x-x, b.y-y) < 20){
+        if(b.burnt){ good++; beans.splice(i,1); }
+        else { mistakes++; b.shake = 12; }
+        return;
+      }
+    }
+  };
+  mgCanvas.addEventListener('pointerdown', tap);
+  self.stop = () => mgCanvas.removeEventListener('pointerdown', tap);
+
+  const t0 = performance.now();
+  self.step = function(){
+    t++;
+    timeLeft = Math.max(0, 30 - (performance.now()-t0)/1000);
+    if(--spawn <= 0){
+      spawn = 26;
+      beans.push({ x:-20, y: 90 + Math.random()*120, burnt: Math.random() < .38,
+                   rot: Math.random()*6, shake:0 });
+    }
+    beans.forEach(b => { b.x += 1.5; if(b.shake > 0) b.shake--; });
+    beans = beans.filter(b => b.x < W+30);
+    if(timeLeft <= 0) return end();
+    draw();
+  };
+
+  function end(){
+    const score = good - mistakes*2;
+    const count = score >= 14 ? 3 : score >= 9 ? 2 : score >= 5 ? 1 : 0;
+    gameOver(count ? 'Отобрано!' : 'Слабовато',
+      `Убрано пережаренных: ${good}, ошибок: ${mistakes}.` + (count ? '' : ' Нужно больше.'),
+      count > 0, 'cinn', count);
+  }
+
+  function draw(){
+    const s = k();
+    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
+    ctx.clearRect(0,0,W,H);
+
+    // лента
+    ctx.fillStyle = '#E8DACB';
+    ctx.fillRect(0, 70, W, 170);
+    ctx.strokeStyle = 'rgba(140,110,90,.22)'; ctx.lineWidth = 3;
+    for(let i = 0; i < 12; i++){
+      const x = ((i*40 + t*1.5) % (W+40)) - 20;
+      ctx.beginPath(); ctx.moveTo(x,70); ctx.lineTo(x-14,240); ctx.stroke();
+    }
+
+    beans.forEach(b => {
+      ctx.save();
+      ctx.translate(b.x + (b.shake ? Math.sin(b.shake*2)*3 : 0), b.y);
+      ctx.rotate(b.rot);
+      ctx.fillStyle = b.burnt ? '#3A2019' : '#9C6239';
+      ctx.beginPath(); ctx.ellipse(0,0,15,10,0,0,6.283); ctx.fill();
+      ctx.strokeStyle = b.burnt ? '#241009' : '#7A4A2A';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-11,0); ctx.quadraticCurveTo(0,5,11,0); ctx.stroke();
+      ctx.restore();
+    });
+
+    ctx.fillStyle = '#8A7266';
+    ctx.font = '700 13px Nunito, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Убрано: ' + good + '  ошибок: ' + mistakes, 12, 24);
+    ctx.textAlign = 'right';
+    ctx.fillText(timeLeft.toFixed(0) + ' с', W-12, 24);
+    document.getElementById('mgScore').textContent = good;
+  }
+  return self;
+}
+
+const BUILD = { marsh: marshGame, syrup: syrupGame, beans: beansGame };
+
+/* =========================================================================
+   СТАРТ
+   ========================================================================= */
+hud(); renderHall(); renderShop(); renderGames();
+setGauge(0);
+})();
+</script>
+</body>
+</html>
