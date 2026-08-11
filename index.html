@@ -17,6 +17,7 @@
   --r:18px;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
 html,body{height:100%;overscroll-behavior:none}
 body{
   background:var(--cream);color:var(--ink);
@@ -111,107 +112,43 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
   font-size:13.5px;font-weight:800;text-align:center;margin-bottom:10px;line-height:1.35}
 .taskLine small{display:block;font-weight:700;opacity:.85;font-size:11.5px;margin-top:2px}
 
-.rig{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px}
-.unit{position:relative}
+.rig{margin-bottom:10px}
+#station{width:100%;height:auto;display:block;touch-action:none;overflow:visible}
+#station text{font-family:'Nunito',sans-serif}
+.svgCap{font-size:9px;font-weight:800;fill:#8A7266;letter-spacing:.06em}
+.svgCapB{font-size:9.5px;font-weight:800;fill:#C98A4B}
+.svgBrand{font-size:13px;font-weight:900;fill:#EDF2F5;letter-spacing:.16em;opacity:.9}
+.svgGauge{font-size:8px;font-weight:800;fill:#C9D4DB}
 
-/* кофемолка */
-.grinder{width:88px;flex:none;touch-action:none}
-.hopper{height:34px;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.15));
-  border:2px solid #B9C3CB;border-bottom:0;border-radius:10px 10px 3px 3px;position:relative;overflow:hidden}
-.hopper i{position:absolute;left:6px;right:6px;bottom:0;height:20px;border-radius:4px;
-  background:radial-gradient(circle at 30% 30%,#6B4A3A,#3A2019)}
-.gBody{background:linear-gradient(180deg,#5E6A73,#49545C);border-radius:4px 4px 10px 10px;
-  padding:10px 0 16px;position:relative;box-shadow:0 4px 0 #39434B}
-.gChute{width:16px;height:14px;background:#39434B;border-radius:0 0 5px 5px;margin:0 auto}
-.gFall{position:absolute;left:50%;transform:translateX(-50%);top:34px;width:9px;height:0;
-  background:repeating-linear-gradient(180deg,#4A3229 0 3px,transparent 3px 6px);
-  transition:height .08s}
-.grinder.on .gBody{box-shadow:0 2px 0 #39434B;transform:translateY(2px)}
-.cap{font-size:10px;font-weight:800;color:var(--dim);text-align:center;margin-top:5px;line-height:1.25}
-.cap b{color:var(--crema)}
+#grinder{transition:transform .08s}
+#grinder.on{transform:translateY(2px)}
+#leverArm{transform-origin:131px 92px;transition:transform .14s cubic-bezier(.4,1.3,.5,1)}
+#lever.pulled #leverArm{transform:rotate(52deg)}
+#valveMark{transform-origin:352px 88px}
+.groupArea.drop rect:first-child{stroke:#C98A4B;stroke-width:3}
 
-/* корпус машины */
-.espresso{flex:1;background:linear-gradient(180deg,#5E6A73,#414C55);border-radius:16px;
-  padding:10px;box-shadow:inset 0 2px 0 rgba(255,255,255,.16),0 5px 0 #2C343A;
-  display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto auto;
-  gap:6px;align-items:center}
-.mHead{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
-.mBrand{color:#fff;font-weight:900;letter-spacing:.14em;font-size:10px;opacity:.8}
-.gauge{width:46px;height:46px;position:relative;flex:none}
-.gauge svg{transform:rotate(-125deg)}
-.gauge .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;color:#fff;font-size:11px;font-weight:900;line-height:1}
-.gauge .val small{font-size:7px;opacity:.7}
-
-/* рычаг */
-.leverBox{grid-row:2;grid-column:1;display:flex;flex-direction:column;align-items:center;touch-action:none}
-.lever{width:26px;height:74px;position:relative;cursor:grab;touch-action:none}
-.lever i{position:absolute;left:9px;top:0;width:8px;height:100%;
-  background:linear-gradient(90deg,#8E9AA3,#C6CFD6,#8E9AA3);border-radius:4px;
-  transform-origin:50% 100%;transition:transform .12s}
-.lever .knob{position:absolute;left:1px;top:-6px;width:24px;height:24px;border-radius:50%;
-  background:radial-gradient(circle at 32% 30%,#3B2A22,#1B1310);
-  box-shadow:0 2px 0 rgba(0,0,0,.4);transition:transform .12s}
-.lever.pulled i{transform:rotate(0) scaleY(.45)}
-.lever.pulled .knob{transform:translateY(40px)}
-.leverHint{font-size:9.5px;font-weight:800;color:#F5C86B;margin-top:3px;text-align:center;line-height:1.2}
-
-/* группа + чашка */
-.groupArea{grid-row:2;grid-column:2;position:relative;display:flex;flex-direction:column;
-  align-items:center;padding-top:4px;min-height:120px}
-.grpHead{width:74px;height:14px;background:#8E9AA3;border-radius:5px 5px 3px 3px}
-.water{width:26px;height:0;background:linear-gradient(180deg,rgba(190,225,240,.9),rgba(190,225,240,.2));
-  border-radius:0 0 4px 4px;transition:height .1s}
-.stream{position:absolute;top:44px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
-.stream i{display:block;width:3px;height:0;border-radius:2px;
-  background:linear-gradient(180deg,#E0A867,#8A5A3B);transition:height .15s}
-.cupImg{width:62px;height:54px;position:relative;margin-top:auto}
-.cupBody{position:absolute;inset:0;background:var(--milk);border:3px solid #D8C6B4;
-  border-radius:7px 7px 26px 26px}
-.cupFill{position:absolute;left:5px;right:5px;bottom:5px;border-radius:3px 3px 21px 21px;
-  background:linear-gradient(180deg,#E0A867,#6B4326);transition:height .2s}
-.cupHandle{position:absolute;right:-13px;top:13px;width:16px;height:21px;
-  border:3px solid #D8C6B4;border-left:0;border-radius:0 11px 11px 0}
-
-/* паровой кран */
-.steamBox{grid-row:2;grid-column:3;display:flex;flex-direction:column;align-items:center;touch-action:none}
-.wand{width:5px;height:44px;background:linear-gradient(90deg,#8E9AA3,#D4DBE0,#8E9AA3);border-radius:3px}
-.valve{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 32% 30%,#6E7A83,#39434B);
-  margin-top:4px;position:relative;cursor:grab;touch-action:none;box-shadow:0 3px 0 rgba(0,0,0,.3)}
-.valve b{position:absolute;left:50%;top:4px;width:3px;height:12px;background:#F5C86B;
-  border-radius:2px;transform-origin:50% 13px;margin-left:-1.5px;display:block}
-.steamBox .cap{color:#D6DEE3}
-.steamBox .cap b{color:#F5C86B}
-
-.flushBtn{grid-column:1/-1;grid-row:3;background:#39434B;color:#CFE8F0;border-radius:10px;
-  padding:9px;font-size:12px;font-weight:800;border-bottom:3px solid #2C343A}
+.flushBtn{display:block;width:100%;margin-top:8px;background:#39434B;color:#CFE8F0;
+  border-radius:12px;padding:11px;font-size:12.5px;font-weight:800;border-bottom:3px solid #2C343A}
 .flushBtn:active{transform:translateY(2px);border-bottom-width:1px}
 .flushBtn.done{background:#2F6E5E;color:#DFF6EE}
 
 /* рожок — перетаскиваемый */
-.pfDock{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;
-  min-height:74px;justify-content:center}
-.pf{width:104px;position:relative;touch-action:none;cursor:grab;transition:transform .2s}
+.pfDock{display:flex;flex-direction:column;align-items:center;margin-bottom:10px}
+.pf{width:150px;touch-action:none;cursor:grab;transition:transform .2s;filter:drop-shadow(0 3px 3px rgba(59,42,34,.25))}
+.pf svg{width:100%;height:auto;display:block}
 .pf.dragging{cursor:grabbing;transition:none;z-index:40}
-.basket{height:30px;background:linear-gradient(180deg,#B4BFC7,#8E9AA3);
-  border-radius:6px 6px 14px 14px;display:flex;align-items:flex-end;justify-content:center;
-  padding-bottom:4px;box-shadow:inset 0 2px 0 rgba(255,255,255,.35)}
-.grounds{width:78px;height:0;border-radius:3px;background:#4A3229;transition:height .12s}
-.grounds.tamped{background:#5E4133;box-shadow:inset 0 2px 0 rgba(0,0,0,.3)}
-.handle{width:26px;height:22px;background:#2E2620;border-radius:0 0 8px 8px;margin:0 auto}
-.dockCap{font-size:10.5px;font-weight:800;color:var(--dim);margin-top:5px;text-align:center}
+.dockCap{font-size:10.5px;font-weight:800;color:var(--dim);margin-top:4px;text-align:center}
 .dockCap b{color:var(--crema)}
-.drop{outline:3px dashed var(--crema);outline-offset:4px;border-radius:12px}
 
 /* темпер */
 .tamperBox{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;touch-action:none}
-.tamper{width:56px;height:52px;position:relative;cursor:grab;touch-action:none;transition:transform .12s}
-.tamper:before{content:"";position:absolute;left:16px;top:0;width:24px;height:26px;
-  background:linear-gradient(180deg,#5E4133,#3B2A22);border-radius:7px 7px 4px 4px}
-.tamper:after{content:"";position:absolute;left:2px;top:26px;width:52px;height:12px;
-  background:linear-gradient(180deg,#C6CFD6,#8E9AA3);border-radius:4px}
+.tamper{width:80px;cursor:grab;touch-action:none;transition:transform .12s;
+  filter:drop-shadow(0 3px 3px rgba(59,42,34,.25))}
+.tamper svg{width:100%;height:auto;display:block}
+.cap{font-size:10px;font-weight:800;color:var(--dim);text-align:center;margin-top:5px;line-height:1.25}
+.cap b{color:var(--crema)}
 
-/* шаги *//* шаги */
+/* шаги *//* шаги *//* шаги */
 .steps{display:flex;gap:5px;margin-bottom:10px}
 .stp{flex:1;text-align:center;font-size:10px;font-weight:800;color:var(--dim);
   padding:7px 2px;border-radius:10px;background:var(--cream2);line-height:1.3}
@@ -306,73 +243,222 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
       <div class="taskLine" id="taskLine"></div>
 
       <div class="rig" id="rig">
-        <!-- кофемолка -->
-        <div class="unit grinder" id="grinder">
-          <div class="hopper"><i></i></div>
-          <div class="gBody">
-            <div class="gChute"></div>
-            <div class="gFall" id="gFall"></div>
-          </div>
-          <div class="cap">Кофемолка<br><b>держать</b></div>
-        </div>
+        <svg id="station" viewBox="0 0 400 232" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#8D99A3"/><stop offset=".22" stop-color="#EDF2F5"/>
+              <stop offset=".5" stop-color="#B8C3CB"/><stop offset=".78" stop-color="#F3F7F9"/>
+              <stop offset="1" stop-color="#7E8A94"/>
+            </linearGradient>
+            <linearGradient id="chromeV" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#F0F4F7"/><stop offset=".45" stop-color="#AEB9C2"/>
+              <stop offset="1" stop-color="#79858F"/>
+            </linearGradient>
+            <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#6E7B85"/><stop offset=".45" stop-color="#4E5A64"/>
+              <stop offset="1" stop-color="#39434B"/>
+            </linearGradient>
+            <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#333C44"/><stop offset="1" stop-color="#232A30"/>
+            </linearGradient>
+            <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#8C5A33"/><stop offset=".5" stop-color="#6E4425"/>
+              <stop offset="1" stop-color="#4E2F19"/>
+            </linearGradient>
+            <linearGradient id="beans" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#5A3A2A"/><stop offset="1" stop-color="#2E1B12"/>
+            </linearGradient>
+            <radialGradient id="glass" cx=".35" cy=".3" r=".8">
+              <stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"/>
+              <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="crema" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#D9A05B"/><stop offset=".35" stop-color="#B4753C"/>
+              <stop offset="1" stop-color="#5C3620"/>
+            </linearGradient>
+            <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity=".28"/>
+            </filter>
+          </defs>
 
-        <!-- эспрессо-машина -->
-        <div class="unit espresso">
-          <div class="mHead">
-            <span class="mBrand">BARISTA</span>
-            <div class="gauge">
-              <svg width="46" height="46" viewBox="0 0 58 58">
-                <circle cx="29" cy="29" r="24" fill="none" stroke="rgba(255,255,255,.16)"
-                        stroke-width="6" stroke-dasharray="113 151" stroke-linecap="round"/>
-                <circle id="gaugeArc" cx="29" cy="29" r="24" fill="none" stroke="#F5C86B"
-                        stroke-width="6" stroke-dasharray="0 264" stroke-linecap="round"/>
-              </svg>
-              <div class="val"><span id="barVal">0</span><small>БАР</small></div>
-            </div>
-          </div>
+          <!-- ================= КОФЕМОЛКА ================= -->
+          <g id="grinder" style="cursor:pointer">
+            <!-- бункер с зёрнами -->
+            <path d="M14 26 h56 l-5 34 h-46 z" fill="#C9D4DB" opacity=".55"/>
+            <path d="M20 34 h44 l-4 24 h-36 z" fill="url(#beans)"/>
+            <g fill="#3E2418">
+              <ellipse cx="30" cy="42" rx="5" ry="3.4" transform="rotate(-20 30 42)"/>
+              <ellipse cx="44" cy="39" rx="5" ry="3.4" transform="rotate(12 44 39)"/>
+              <ellipse cx="55" cy="45" rx="5" ry="3.4" transform="rotate(-8 55 45)"/>
+              <ellipse cx="37" cy="50" rx="5" ry="3.4" transform="rotate(25 37 50)"/>
+              <ellipse cx="50" cy="53" rx="5" ry="3.4" transform="rotate(-30 50 53)"/>
+            </g>
+            <path d="M14 26 h56 l-5 34 h-46 z" fill="url(#glass)"/>
+            <rect x="12" y="22" width="60" height="7" rx="3" fill="url(#chrome)"/>
+            <!-- корпус -->
+            <rect x="16" y="58" width="52" height="66" rx="7" fill="url(#body)" filter="url(#soft)"/>
+            <rect x="20" y="62" width="44" height="5" rx="2.5" fill="#8D99A3" opacity=".5"/>
+            <!-- регулятор помола -->
+            <circle cx="42" cy="80" r="10" fill="url(#chromeV)"/>
+            <circle cx="42" cy="80" r="6" fill="#2C343A"/>
+            <rect x="41" y="72" width="2" height="6" rx="1" fill="#F5C86B"/>
+            <!-- выпускной жёлоб -->
+            <path d="M34 106 h16 l-3 12 h-10 z" fill="#232A30"/>
+            <rect id="gFall" x="40" y="118" width="4" height="0" fill="#4A3229" rx="2"/>
+            <!-- подсветка при работе -->
+            <circle id="gLed" cx="60" cy="70" r="3" fill="#3E4A52"/>
+          </g>
+          <text x="42" y="140" text-anchor="middle" class="svgCap">КОФЕМОЛКА</text>
+          <text x="42" y="151" text-anchor="middle" class="svgCapB">держать</text>
 
-          <!-- рычаг группы -->
-          <div class="leverBox">
-            <div class="lever" id="lever"><i></i><span class="knob"></span></div>
-            <div class="leverHint" id="leverHint">тяни вниз</div>
-          </div>
+          <!-- ================= КОРПУС МАШИНЫ ================= -->
+          <rect x="96" y="18" width="292" height="176" rx="16" fill="url(#body)" filter="url(#soft)"/>
+          <rect x="104" y="26" width="276" height="46" rx="10" fill="url(#panel)"/>
+          <rect x="96" y="18" width="292" height="9" rx="5" fill="#8D99A3" opacity=".45"/>
+          <text x="118" y="55" class="svgBrand">BARISTA</text>
+          <!-- чашкогрейка сверху -->
+          <g opacity=".55">
+            <ellipse cx="300" cy="26" rx="15" ry="4.5" fill="#C9D4DB"/>
+            <ellipse cx="330" cy="26" rx="15" ry="4.5" fill="#C9D4DB"/>
+          </g>
 
-          <!-- группа, рожок, чашка -->
-          <div class="groupArea">
-            <div class="grpHead"></div>
-            <div class="water" id="water"></div>
-            <div class="stream" id="stream"><i></i><i></i></div>
-            <div class="cupImg">
-              <div class="cupBody"></div>
-              <div class="cupFill" id="cupFill" style="height:0"></div>
-              <div class="cupHandle"></div>
-            </div>
-          </div>
+          <!-- манометр -->
+          <g transform="translate(330,49)">
+            <circle r="27" fill="url(#chromeV)"/>
+            <circle r="22" fill="#1E252B"/>
+            <circle r="22" fill="url(#glass)" opacity=".5"/>
+            <g stroke="#6E7B85" stroke-width="1.4">
+              <line x1="-16" y1="9" x2="-13" y2="7"/><line x1="-18" y1="0" x2="-15" y2="0"/>
+              <line x1="-13" y1="-11" x2="-11" y2="-9"/><line x1="0" y1="-18" x2="0" y2="-15"/>
+              <line x1="13" y1="-11" x2="11" y2="-9"/><line x1="18" y1="0" x2="15" y2="0"/>
+            </g>
+            <path d="M-15 -8 A18 18 0 0 1 15 -8" fill="none" stroke="#5CB87F" stroke-width="3" opacity=".85"/>
+            <circle id="gaugeArc" r="22" fill="none" stroke="#F5C86B" stroke-width="0"
+                    stroke-dasharray="0 264"/>
+            <line id="needle" x1="0" y1="4" x2="0" y2="-14" stroke="#E8807F" stroke-width="2.2"
+                  stroke-linecap="round" transform="rotate(-125)"/>
+            <circle r="3" fill="#C9D4DB"/>
+            <text y="15" text-anchor="middle" class="svgGauge"><tspan id="barVal">0</tspan> БАР</text>
+          </g>
 
-          <!-- паровой кран -->
-          <div class="steamBox">
-            <div class="wand"></div>
-            <div class="valve" id="valve"><b></b></div>
-            <div class="cap">Пар<br><b>крути</b></div>
-          </div>
+          <!-- ================= РЫЧАГ ГРУППЫ ================= -->
+          <g id="lever" style="cursor:grab">
+            <rect x="118" y="86" width="26" height="22" rx="5" fill="url(#chromeV)"/>
+            <g id="leverArm">
+              <rect x="127" y="30" width="8" height="60" rx="4" fill="url(#chrome)"/>
+              <circle cx="131" cy="30" r="13" fill="#2B211B"/>
+              <circle cx="127" cy="26" r="4" fill="#4A3A31" opacity=".8"/>
+            </g>
+          </g>
+          <text x="131" y="122" text-anchor="middle" class="svgCapB" id="leverHint">тяни вниз</text>
 
-          <!-- кран промывки -->
-          <button class="flushBtn" id="flushBtn">💧 Промыть группу</button>
-        </div>
+          <!-- ================= ГРУППА E61 + ЧАШКА ================= -->
+          <g class="groupArea">
+            <rect x="196" y="76" width="84" height="30" rx="8" fill="url(#chromeV)"/>
+            <rect x="204" y="100" width="68" height="16" rx="5" fill="#8D99A3"/>
+            <rect x="214" y="112" width="48" height="8" rx="3" fill="#6E7B85"/>
+            <rect id="water" x="230" y="120" width="16" height="0" fill="#BEE1F0" opacity=".8" rx="3"/>
+            <g id="stream">
+              <rect x="228" y="120" width="3" height="0" rx="1.5" fill="url(#crema)"/>
+              <rect x="245" y="120" width="3" height="0" rx="1.5" fill="url(#crema)"/>
+            </g>
+            <!-- чашка с блюдцем -->
+            <g transform="translate(238,150)">
+              <ellipse cx="0" cy="34" rx="34" ry="6" fill="#D8C6B4" opacity=".55"/>
+              <path d="M-24 -4 h48 a4 4 0 0 1 4 4 l-5 26 a8 8 0 0 1 -8 7 h-30 a8 8 0 0 1 -8 -7 l-5 -26 a4 4 0 0 1 4 -4 z"
+                    fill="#FFFBF6" stroke="#D8C6B4" stroke-width="2.5"/>
+              <clipPath id="cupClip">
+                <path d="M-21 -1 h42 l-4 24 a7 7 0 0 1 -7 6 h-20 a7 7 0 0 1 -7 -6 z"/>
+              </clipPath>
+              <g clip-path="url(#cupClip)">
+                <rect id="cupFill" x="-21" y="29" width="42" height="0" fill="url(#crema)"/>
+              </g>
+              <path d="M24 2 a11 11 0 0 1 0 18" fill="none" stroke="#D8C6B4" stroke-width="3.5"/>
+            </g>
+          </g>
+
+          <!-- ================= ПАРОВАЯ ТРУБКА ================= -->
+          <path d="M352 96 v34 q0 12 -11 15" fill="none" stroke="url(#chrome)" stroke-width="6"
+                stroke-linecap="round"/>
+          <circle cx="341" cy="146" r="4" fill="#8D99A3"/>
+          <g id="valve" style="cursor:grab">
+            <circle cx="352" cy="88" r="17" fill="url(#chromeV)"/>
+            <circle cx="352" cy="88" r="11" fill="#2C343A"/>
+            <g id="valveMark">
+              <rect x="350.5" y="74" width="3" height="11" rx="1.5" fill="#F5C86B"/>
+            </g>
+          </g>
+          <text x="352" y="170" text-anchor="middle" class="svgCap">ПАР</text>
+          <text x="352" y="181" text-anchor="middle" class="svgCapB">крути</text>
+
+          <!-- ================= ПОДДОН ================= -->
+          <rect x="180" y="196" width="180" height="16" rx="4" fill="#39434B"/>
+          <g stroke="#6E7B85" stroke-width="2">
+            <line x1="188" y1="200" x2="352" y2="200"/>
+            <line x1="188" y1="205" x2="352" y2="205"/>
+            <line x1="188" y1="209" x2="352" y2="209"/>
+          </g>
+        </svg>
+
+        <button class="flushBtn" id="flushBtn">💧 Промыть группу</button>
       </div>
 
-      <!-- рожок: его таскают между кофемолкой, темпером и группой -->
+      <!-- рожок: его таскают в группу -->
       <div class="pfDock" id="pfDock">
         <div class="pf" id="pf">
-          <div class="basket"><div class="grounds" id="grounds"></div></div>
-          <div class="handle"></div>
+          <svg viewBox="0 0 150 74" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ch2" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#F0F4F7"/><stop offset=".5" stop-color="#AEB9C2"/>
+                <stop offset="1" stop-color="#79858F"/>
+              </linearGradient>
+              <linearGradient id="wd2" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#9A6438"/><stop offset="1" stop-color="#5A3620"/>
+              </linearGradient>
+            </defs>
+            <!-- корзина: широкий обод и сужающаяся книзу чаша -->
+            <ellipse cx="49" cy="10" rx="37" ry="7" fill="#DDE5EA"/>
+            <path d="M12 10 a37 7 0 0 0 74 0 l-7 28 a12 10 0 0 1 -12 8 h-36 a12 10 0 0 1 -12 -8 z"
+                  fill="url(#ch2)"/>
+            <clipPath id="bskClip">
+              <path d="M14 12 a35 6 0 0 0 70 0 l-6 26 a10 8 0 0 1 -10 6 h-38 a10 8 0 0 1 -10 -6 z"/>
+            </clipPath>
+            <g clip-path="url(#bskClip)">
+              <rect id="grounds" x="14" y="44" width="70" height="0" fill="#4A3229"/>
+            </g>
+            <ellipse cx="49" cy="10" rx="30" ry="5" fill="#6E7B85" opacity=".35"/>
+            <!-- два носика -->
+            <path d="M36 46 h9 l-2 12 h-5 z" fill="#9BA7B0"/>
+            <path d="M53 46 h9 l-2 12 h-5 z" fill="#9BA7B0"/>
+            <rect x="34" y="44" width="30" height="4" rx="2" fill="#79858F"/>
+            <!-- ручка -->
+            <rect x="84" y="6" width="16" height="10" rx="3" fill="#79858F"/>
+            <rect x="98" y="3" width="48" height="16" rx="8" fill="url(#wd2)"/>
+            <rect x="106" y="7" width="30" height="3" rx="1.5" fill="#B98455" opacity=".5"/>
+          </svg>
         </div>
         <div class="dockCap" id="dockCap">Рожок</div>
       </div>
 
       <!-- темпер -->
       <div class="tamperBox" id="tamperBox" hidden>
-        <div class="tamper" id="tamper"></div>
+        <div class="tamper" id="tamper">
+          <svg viewBox="0 0 80 74" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="wd3" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#9A6438"/><stop offset="1" stop-color="#5A3620"/>
+              </linearGradient>
+              <linearGradient id="ch3" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#EDF2F5"/><stop offset="1" stop-color="#8D99A3"/>
+              </linearGradient>
+            </defs>
+            <path d="M28 4 h24 a6 6 0 0 1 6 6 v20 a8 8 0 0 1 -8 8 h-20 a8 8 0 0 1 -8 -8 v-20 a6 6 0 0 1 6 -6 z"
+                  fill="url(#wd3)"/>
+            <rect x="30" y="10" width="20" height="3" rx="1.5" fill="#B98455" opacity=".5"/>
+            <rect x="16" y="38" width="48" height="7" rx="3" fill="#79858F"/>
+            <rect x="10" y="45" width="60" height="14" rx="4" fill="url(#ch3)"/>
+          </svg>
+        </div>
         <div class="cap">Темпер · <b>тяни вниз</b></div>
       </div>
 
@@ -878,7 +964,7 @@ function sceneStep(){
   // терпения тикает. Ограничиваем dt, чтобы после долгого перерыва
   // никто не «телепортировался» через весь зал.
   const now = performance.now();
-  const dt = Math.min(.1, sceneLast ? (now - sceneLast) / 1000 : .016);
+  const dt = Math.min(.5, sceneLast ? (now - sceneLast) / 1000 : .016);
   sceneLast = now;
   sceneT += dt * 60;
 
@@ -1025,6 +1111,8 @@ setTimeout(spawnGuest, 900);
    Шаги повторяют реальный цикл: помол → темпер → фиксация рожка →
    пролив → (для молочных) пар.
    ========================================================================= */
+const el = id => document.getElementById(id);
+
 const STEP_LIST = [
   {id:'grind', t:'Насыпать'},
   {id:'tamp',  t:'Утрамбовать'},
@@ -1036,6 +1124,18 @@ const STEP_LIST = [
 
 let B = null;
 function resetBrew(){
+  // возвращаем машину в исходный вид, иначе следы прошлой чашки остаются
+  if(document.getElementById('grounds')){
+    el('grounds').setAttribute('height', 0);
+    el('grounds').setAttribute('y', 44);
+    el('grounds').setAttribute('fill', '#4A3229');
+    el('cupFill').setAttribute('height', 0);
+    el('cupFill').setAttribute('y', 29);
+    el('pf').style.opacity = 1;
+    el('flushBtn').classList.remove('done');
+    el('flushBtn').textContent = '💧 Промыть группу';
+    setGauge(0);
+  }
   B = {
     step:'grind', grindSize:5, dose:0, tampQuality:0,
     yield:0, brewTime:0, pressure:0,
@@ -1044,8 +1144,6 @@ function resetBrew(){
   };
 }
 resetBrew();
-
-const el = id => document.getElementById(id);
 
 /* Подпись задачи наверху — чтобы всегда было понятно, что делать руками. */
 const TASK = {
@@ -1088,9 +1186,10 @@ function renderMachine(){
 
 function setGauge(bar){
   const pct = Math.max(0, Math.min(1, bar/15));
-  el('gaugeArc').setAttribute('stroke-dasharray', (pct*113) + ' 264');
+  // стрелка манометра: шкала развёрнута на 250°, ноль слева внизу
+  el('needle').setAttribute('transform', 'rotate(' + (-125 + pct * 250) + ')');
+  el('needle').setAttribute('stroke', bar >= 8 && bar <= 10 ? '#5CB87F' : '#E8807F');
   el('barVal').textContent = bar.toFixed(1);
-  el('gaugeArc').setAttribute('stroke', bar >= 8 && bar <= 10 ? '#7CC5B0' : '#F5C86B');
 }
 
 /* ---------------- 1. НАСЫПАТЬ: держим палец на кофемолке ---------------- */
@@ -1104,13 +1203,16 @@ function setGauge(bar){
     e.preventDefault();
     if(timer) return;
     g.classList.add('on');
-    el('gFall').style.height = '26px';
+    el('gFall').setAttribute('height', 26);
+    el('gLed').setAttribute('fill', '#F5C86B');
     last = performance.now();
     timer = setInterval(() => {
       const now = performance.now();
       B.dose = Math.min(25, B.dose + PER_SEC * (now - last)/1000);
       last = now;
-      el('grounds').style.height = Math.min(16, B.dose * .9) + 'px';
+      const gh = Math.min(22, B.dose * 1.1);   // до края обода не доводим
+      el('grounds').setAttribute('height', gh);
+      el('grounds').setAttribute('y', 44 - gh);
       const d = el('doseTxt'); if(d) d.textContent = B.dose.toFixed(1);
       const bar = el('doseBar'); if(bar) bar.style.width = (B.dose/25*100) + '%';
       if(B.dose >= 25) stop();
@@ -1120,7 +1222,8 @@ function setGauge(bar){
     if(!timer) return;
     clearInterval(timer); timer = null;
     g.classList.remove('on');
-    el('gFall').style.height = '0';
+    el('gFall').setAttribute('height', 0);
+    el('gLed').setAttribute('fill', '#3E4A52');
     if(B.dose < 6){ toast('Ещё чуть-чуть — нужно около 18 г'); return; }
     B.scores.dose = 1 - Math.min(1, Math.abs(B.dose - 18) / 11);
     B.step = 'tamp';
@@ -1145,7 +1248,7 @@ function setGauge(bar){
     if(y0 === null) return;
     const dy = Math.max(0, Math.min(46, e.clientY - y0));
     force = dy / 46 * 30;                     // 0..30 кг
-    t.style.transform = 'translateY(' + dy * .5 + 'px)';
+    t.style.transform = 'translateY(' + dy * .6 + 'px)';
     const bar = el('tampBar'), txt = el('tampTxt');
     if(bar) bar.style.width = (force/30*100) + '%';
     if(txt) txt.textContent = force.toFixed(0);
@@ -1157,7 +1260,7 @@ function setGauge(bar){
     if(force < 3){ return; }                  // случайный тап — не считаем
     B.tampQuality = 1 - Math.min(1, Math.abs(force - 17.5) / 20);
     B.scores.tamp = B.tampQuality;
-    el('grounds').classList.add('tamped');
+    el('grounds').setAttribute('fill', '#5E4133');   // утрамбованная таблетка темнее
     B.step = 'lock';
     renderMachine();
   };
@@ -1175,7 +1278,8 @@ function setGauge(bar){
     e.preventDefault();
     drag = true; sx = e.clientX; sy = e.clientY;
     pf.classList.add('dragging');
-    el('groupArea') && el('groupArea').classList.add('drop');
+    const ga = document.querySelector('.groupArea');
+    ga && ga.classList.add('drop');
     pf.setPointerCapture && pf.setPointerCapture(e.pointerId);
   };
   const move = e => {
@@ -1232,8 +1336,7 @@ let brewTimer = null;
 
 function startBrew(){
   if(brewTimer) return;
-  const stream = el('stream');
-  [...stream.children].forEach(i => i.style.height = '24px');
+  [...el('stream').children].forEach(i => i.setAttribute('height', 30));
   const resist = (10 - B.grindSize) * .12 + B.tampQuality * .35;
   const rate = 3.6 / Math.max(.55, resist);
   const t0 = performance.now();
@@ -1248,7 +1351,9 @@ function startBrew(){
     const bar = el('yieldBar'), txt = el('yieldTxt');
     if(bar) bar.style.width = (B.yield/50*100) + '%';
     if(txt) txt.textContent = B.yield.toFixed(1);
-    el('cupFill').style.height = Math.min(44, B.yield * 1.15) + 'px';
+    const fh = Math.min(30, B.yield * .8);
+    el('cupFill').setAttribute('height', fh);
+    el('cupFill').setAttribute('y', 29 - fh);
     if(B.yield >= 60) stopBrew();
   }, 50);
 }
@@ -1256,7 +1361,7 @@ function startBrew(){
 function stopBrew(){
   if(!brewTimer) return;
   clearInterval(brewTimer); brewTimer = null;
-  [...el('stream').children].forEach(i => i.style.height = '0');
+  [...el('stream').children].forEach(i => i.setAttribute('height', 0));
   setGauge(0);
   if(B.yield < 4) return;              // рычаг дёрнули случайно
   B.scores.yield = 1 - Math.min(1, Math.abs(B.yield - 36) / 26);
@@ -1288,7 +1393,7 @@ let steamTimer = null;
     if(d < -Math.PI) d += 2*Math.PI;
     angle += d * 180/Math.PI;
     open = Math.max(0, Math.min(1, angle / 300));
-    v.querySelector('b').style.transform = 'rotate(' + angle + 'deg)';
+    el('valveMark').setAttribute('transform', 'rotate(' + angle + ' 352 88)');
     if(open > .12) startSteam(); else stopSteamFlow();
   };
   const up = () => { a0 = null; };
@@ -1336,8 +1441,8 @@ el('flushBtn').addEventListener('click', () => {
   el('flushBtn').classList.add('done');
   el('flushBtn').textContent = '💧 Группа промыта';
   const w = el('water');
-  w.style.height = '30px';
-  setTimeout(() => { w.style.height = '0'; }, 700);
+  w.setAttribute('height', 34);
+  setTimeout(() => w.setAttribute('height', 0), 700);
   toast('Чисто. Вкус будет лучше');
 });
 
