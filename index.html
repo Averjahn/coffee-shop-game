@@ -106,58 +106,112 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
 .empty{text-align:center;color:var(--dim);padding:40px 20px;font-size:14px}
 .empty .big{font-size:44px;margin-bottom:10px}
 
-/* ---------- кофемашина ---------- */
-.machine{background:linear-gradient(180deg,#4E5A63,#39434B);border-radius:22px;
-  padding:16px;margin:0 0 12px;box-shadow:inset 0 2px 0 rgba(255,255,255,.14),0 6px 0 #2C343A;
-  position:relative;overflow:hidden}
-.machine:before{content:"";position:absolute;inset:0;
-  background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.07) 50%,transparent 58%)}
-.mtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;position:relative}
-.brand{color:#fff;font-weight:900;letter-spacing:.12em;font-size:12px;opacity:.85}
-.gauge{width:58px;height:58px;position:relative;flex:none}
+/* ---------- станция бариста ---------- */
+.taskLine{background:var(--crema);color:#fff;border-radius:12px;padding:9px 14px;
+  font-size:13.5px;font-weight:800;text-align:center;margin-bottom:10px;line-height:1.35}
+.taskLine small{display:block;font-weight:700;opacity:.85;font-size:11.5px;margin-top:2px}
+
+.rig{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px}
+.unit{position:relative}
+
+/* кофемолка */
+.grinder{width:88px;flex:none;touch-action:none}
+.hopper{height:34px;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.15));
+  border:2px solid #B9C3CB;border-bottom:0;border-radius:10px 10px 3px 3px;position:relative;overflow:hidden}
+.hopper i{position:absolute;left:6px;right:6px;bottom:0;height:20px;border-radius:4px;
+  background:radial-gradient(circle at 30% 30%,#6B4A3A,#3A2019)}
+.gBody{background:linear-gradient(180deg,#5E6A73,#49545C);border-radius:4px 4px 10px 10px;
+  padding:10px 0 16px;position:relative;box-shadow:0 4px 0 #39434B}
+.gChute{width:16px;height:14px;background:#39434B;border-radius:0 0 5px 5px;margin:0 auto}
+.gFall{position:absolute;left:50%;transform:translateX(-50%);top:34px;width:9px;height:0;
+  background:repeating-linear-gradient(180deg,#4A3229 0 3px,transparent 3px 6px);
+  transition:height .08s}
+.grinder.on .gBody{box-shadow:0 2px 0 #39434B;transform:translateY(2px)}
+.cap{font-size:10px;font-weight:800;color:var(--dim);text-align:center;margin-top:5px;line-height:1.25}
+.cap b{color:var(--crema)}
+
+/* корпус машины */
+.espresso{flex:1;background:linear-gradient(180deg,#5E6A73,#414C55);border-radius:16px;
+  padding:10px;box-shadow:inset 0 2px 0 rgba(255,255,255,.16),0 5px 0 #2C343A;
+  display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto auto;
+  gap:6px;align-items:center}
+.mHead{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}
+.mBrand{color:#fff;font-weight:900;letter-spacing:.14em;font-size:10px;opacity:.8}
+.gauge{width:46px;height:46px;position:relative;flex:none}
 .gauge svg{transform:rotate(-125deg)}
-.gauge .val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  flex-direction:column;color:#fff;font-size:13px;font-weight:900;line-height:1}
-.gauge .val small{font-size:8px;opacity:.7;font-weight:700}
+.gauge .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;color:#fff;font-size:11px;font-weight:900;line-height:1}
+.gauge .val small{font-size:7px;opacity:.7}
 
-/* группа и портафильтр */
-.group{background:#2E3740;border-radius:14px;padding:14px;position:relative;
-  display:flex;flex-direction:column;align-items:center;gap:8px}
-.groupHead{width:110px;height:16px;background:#59656F;border-radius:6px 6px 3px 3px}
-.pf{width:96px;height:34px;background:#8E9AA3;border-radius:5px 5px 16px 16px;
-  position:relative;display:flex;align-items:flex-end;justify-content:center;
-  transition:transform .35s cubic-bezier(.4,1.4,.5,1)}
-.pf.locked{transform:translateY(-8px) rotate(0deg)}
-.pf.out{transform:translateY(26px) rotate(-8deg)}
-.pf .grounds{width:78px;height:13px;border-radius:3px;background:var(--bean);
-  margin-bottom:4px;transition:.2s}
-.pf .grounds.empty{background:#5A666F}
-.pf .grounds.tamped{background:var(--bean2);box-shadow:inset 0 2px 0 rgba(0,0,0,.25)}
+/* рычаг */
+.leverBox{grid-row:2;grid-column:1;display:flex;flex-direction:column;align-items:center;touch-action:none}
+.lever{width:26px;height:74px;position:relative;cursor:grab;touch-action:none}
+.lever i{position:absolute;left:9px;top:0;width:8px;height:100%;
+  background:linear-gradient(90deg,#8E9AA3,#C6CFD6,#8E9AA3);border-radius:4px;
+  transform-origin:50% 100%;transition:transform .12s}
+.lever .knob{position:absolute;left:1px;top:-6px;width:24px;height:24px;border-radius:50%;
+  background:radial-gradient(circle at 32% 30%,#3B2A22,#1B1310);
+  box-shadow:0 2px 0 rgba(0,0,0,.4);transition:transform .12s}
+.lever.pulled i{transform:rotate(0) scaleY(.45)}
+.lever.pulled .knob{transform:translateY(40px)}
+.leverHint{font-size:9.5px;font-weight:800;color:#F5C86B;margin-top:3px;text-align:center;line-height:1.2}
 
-.stream{position:absolute;top:100%;left:50%;transform:translateX(-50%);
-  width:0;display:flex;gap:9px}
-.stream i{display:block;width:3px;height:0;background:linear-gradient(180deg,var(--crema2),var(--crema));
-  border-radius:2px;transition:height .2s}
-.cupZone{margin-top:6px;display:flex;justify-content:center;position:relative;height:74px}
-.cupImg{width:74px;height:64px;position:relative}
+/* группа + чашка */
+.groupArea{grid-row:2;grid-column:2;position:relative;display:flex;flex-direction:column;
+  align-items:center;padding-top:4px;min-height:120px}
+.grpHead{width:74px;height:14px;background:#8E9AA3;border-radius:5px 5px 3px 3px}
+.water{width:26px;height:0;background:linear-gradient(180deg,rgba(190,225,240,.9),rgba(190,225,240,.2));
+  border-radius:0 0 4px 4px;transition:height .1s}
+.stream{position:absolute;top:44px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.stream i{display:block;width:3px;height:0;border-radius:2px;
+  background:linear-gradient(180deg,#E0A867,#8A5A3B);transition:height .15s}
+.cupImg{width:62px;height:54px;position:relative;margin-top:auto}
 .cupBody{position:absolute;inset:0;background:var(--milk);border:3px solid #D8C6B4;
-  border-radius:8px 8px 30px 30px}
-.cupFill{position:absolute;left:5px;right:5px;bottom:5px;border-radius:4px 4px 24px 24px;
-  background:linear-gradient(180deg,var(--crema2),#6B4326);transition:height .25s}
-.cupHandle{position:absolute;right:-15px;top:16px;width:19px;height:24px;
-  border:3px solid #D8C6B4;border-left:0;border-radius:0 12px 12px 0}
+  border-radius:7px 7px 26px 26px}
+.cupFill{position:absolute;left:5px;right:5px;bottom:5px;border-radius:3px 3px 21px 21px;
+  background:linear-gradient(180deg,#E0A867,#6B4326);transition:height .2s}
+.cupHandle{position:absolute;right:-13px;top:13px;width:16px;height:21px;
+  border:3px solid #D8C6B4;border-left:0;border-radius:0 11px 11px 0}
 
-/* панель кнопок машины */
-.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;position:relative}
-.key{background:#59656F;color:#fff;border-radius:11px;padding:10px 4px;font-size:10.5px;
-  font-weight:800;text-align:center;border-bottom:4px solid #3F4A52;line-height:1.25;
-  transition:transform .07s}
-.key:active{transform:translateY(2px);border-bottom-width:2px}
-.key.on{background:var(--crema);border-bottom-color:#A66E37}
-.key .ic{display:block;font-size:17px;margin-bottom:2px}
-.key:disabled{opacity:.4}
+/* паровой кран */
+.steamBox{grid-row:2;grid-column:3;display:flex;flex-direction:column;align-items:center;touch-action:none}
+.wand{width:5px;height:44px;background:linear-gradient(90deg,#8E9AA3,#D4DBE0,#8E9AA3);border-radius:3px}
+.valve{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 32% 30%,#6E7A83,#39434B);
+  margin-top:4px;position:relative;cursor:grab;touch-action:none;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+.valve b{position:absolute;left:50%;top:4px;width:3px;height:12px;background:#F5C86B;
+  border-radius:2px;transform-origin:50% 13px;margin-left:-1.5px;display:block}
+.steamBox .cap{color:#D6DEE3}
+.steamBox .cap b{color:#F5C86B}
 
-/* шаги */
+.flushBtn{grid-column:1/-1;grid-row:3;background:#39434B;color:#CFE8F0;border-radius:10px;
+  padding:9px;font-size:12px;font-weight:800;border-bottom:3px solid #2C343A}
+.flushBtn:active{transform:translateY(2px);border-bottom-width:1px}
+.flushBtn.done{background:#2F6E5E;color:#DFF6EE}
+
+/* рожок — перетаскиваемый */
+.pfDock{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;
+  min-height:74px;justify-content:center}
+.pf{width:104px;position:relative;touch-action:none;cursor:grab;transition:transform .2s}
+.pf.dragging{cursor:grabbing;transition:none;z-index:40}
+.basket{height:30px;background:linear-gradient(180deg,#B4BFC7,#8E9AA3);
+  border-radius:6px 6px 14px 14px;display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:4px;box-shadow:inset 0 2px 0 rgba(255,255,255,.35)}
+.grounds{width:78px;height:0;border-radius:3px;background:#4A3229;transition:height .12s}
+.grounds.tamped{background:#5E4133;box-shadow:inset 0 2px 0 rgba(0,0,0,.3)}
+.handle{width:26px;height:22px;background:#2E2620;border-radius:0 0 8px 8px;margin:0 auto}
+.dockCap{font-size:10.5px;font-weight:800;color:var(--dim);margin-top:5px;text-align:center}
+.dockCap b{color:var(--crema)}
+.drop{outline:3px dashed var(--crema);outline-offset:4px;border-radius:12px}
+
+/* темпер */
+.tamperBox{display:flex;flex-direction:column;align-items:center;margin-bottom:10px;touch-action:none}
+.tamper{width:56px;height:52px;position:relative;cursor:grab;touch-action:none;transition:transform .12s}
+.tamper:before{content:"";position:absolute;left:16px;top:0;width:24px;height:26px;
+  background:linear-gradient(180deg,#5E4133,#3B2A22);border-radius:7px 7px 4px 4px}
+.tamper:after{content:"";position:absolute;left:2px;top:26px;width:52px;height:12px;
+  background:linear-gradient(180deg,#C6CFD6,#8E9AA3);border-radius:4px}
+
+/* шаги *//* шаги */
 .steps{display:flex;gap:5px;margin-bottom:10px}
 .stp{flex:1;text-align:center;font-size:10px;font-weight:800;color:var(--dim);
   padding:7px 2px;border-radius:10px;background:var(--cream2);line-height:1.3}
@@ -249,42 +303,77 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
   <section class="screen" id="s-machine">
     <div class="pad">
       <div class="steps" id="steps"></div>
+      <div class="taskLine" id="taskLine"></div>
 
-      <div class="machine">
-        <div class="mtop">
-          <span class="brand">BARISTA · PRO</span>
-          <div class="gauge">
-            <svg width="58" height="58" viewBox="0 0 58 58">
-              <circle cx="29" cy="29" r="24" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="5"
-                      stroke-dasharray="113 151" stroke-linecap="round"/>
-              <circle id="gaugeArc" cx="29" cy="29" r="24" fill="none" stroke="#F5C86B" stroke-width="5"
-                      stroke-dasharray="0 264" stroke-linecap="round"/>
-            </svg>
-            <div class="val"><span id="barVal">0</span><small>БАР</small></div>
+      <div class="rig" id="rig">
+        <!-- кофемолка -->
+        <div class="unit grinder" id="grinder">
+          <div class="hopper"><i></i></div>
+          <div class="gBody">
+            <div class="gChute"></div>
+            <div class="gFall" id="gFall"></div>
           </div>
+          <div class="cap">Кофемолка<br><b>держать</b></div>
         </div>
 
-        <div class="group">
-          <div class="groupHead"></div>
-          <div class="pf out" id="pf">
-            <div class="grounds empty" id="grounds"></div>
-            <div class="stream" id="stream"><i></i><i></i></div>
+        <!-- эспрессо-машина -->
+        <div class="unit espresso">
+          <div class="mHead">
+            <span class="mBrand">BARISTA</span>
+            <div class="gauge">
+              <svg width="46" height="46" viewBox="0 0 58 58">
+                <circle cx="29" cy="29" r="24" fill="none" stroke="rgba(255,255,255,.16)"
+                        stroke-width="6" stroke-dasharray="113 151" stroke-linecap="round"/>
+                <circle id="gaugeArc" cx="29" cy="29" r="24" fill="none" stroke="#F5C86B"
+                        stroke-width="6" stroke-dasharray="0 264" stroke-linecap="round"/>
+              </svg>
+              <div class="val"><span id="barVal">0</span><small>БАР</small></div>
+            </div>
           </div>
-          <div class="cupZone">
+
+          <!-- рычаг группы -->
+          <div class="leverBox">
+            <div class="lever" id="lever"><i></i><span class="knob"></span></div>
+            <div class="leverHint" id="leverHint">тяни вниз</div>
+          </div>
+
+          <!-- группа, рожок, чашка -->
+          <div class="groupArea">
+            <div class="grpHead"></div>
+            <div class="water" id="water"></div>
+            <div class="stream" id="stream"><i></i><i></i></div>
             <div class="cupImg">
               <div class="cupBody"></div>
               <div class="cupFill" id="cupFill" style="height:0"></div>
               <div class="cupHandle"></div>
             </div>
           </div>
-        </div>
 
-        <div class="keys">
-          <button class="key" id="k-flush"><span class="ic">💧</span>Промыв</button>
-          <button class="key" id="k-lock"><span class="ic">🔒</span>Рожок</button>
-          <button class="key" id="k-brew"><span class="ic">▶</span>Пролив</button>
-          <button class="key" id="k-steam"><span class="ic">♨</span>Пар</button>
+          <!-- паровой кран -->
+          <div class="steamBox">
+            <div class="wand"></div>
+            <div class="valve" id="valve"><b></b></div>
+            <div class="cap">Пар<br><b>крути</b></div>
+          </div>
+
+          <!-- кран промывки -->
+          <button class="flushBtn" id="flushBtn">💧 Промыть группу</button>
         </div>
+      </div>
+
+      <!-- рожок: его таскают между кофемолкой, темпером и группой -->
+      <div class="pfDock" id="pfDock">
+        <div class="pf" id="pf">
+          <div class="basket"><div class="grounds" id="grounds"></div></div>
+          <div class="handle"></div>
+        </div>
+        <div class="dockCap" id="dockCap">Рожок</div>
+      </div>
+
+      <!-- темпер -->
+      <div class="tamperBox" id="tamperBox" hidden>
+        <div class="tamper" id="tamper"></div>
+        <div class="cap">Темпер · <b>тяни вниз</b></div>
       </div>
 
       <div class="card" id="stepBox"></div>
@@ -937,230 +1026,390 @@ setTimeout(spawnGuest, 900);
    пролив → (для молочных) пар.
    ========================================================================= */
 const STEP_LIST = [
-  {id:'grind', t:'Помол'},
-  {id:'tamp',  t:'Темпер'},
-  {id:'lock',  t:'Рожок'},
-  {id:'brew',  t:'Пролив'},
-  {id:'steam', t:'Молоко'},
+  {id:'grind', t:'Насыпать'},
+  {id:'tamp',  t:'Утрамбовать'},
+  {id:'lock',  t:'Вставить'},
+  {id:'brew',  t:'Рычаг'},
+  {id:'steam', t:'Пар'},
   {id:'serve', t:'Подача'},
 ];
 
-let B = null;   // состояние текущего приготовления
+let B = null;
 function resetBrew(){
   B = {
-    step:'grind',
-    grindSize:5,      // 1 тонкий … 9 грубый
-    dose:0,           // граммы в корзине
-    tampQuality:0,    // 0..1
-    yield:0,          // граммы в чашке
-    brewTime:0,
-    pressure:0,
-    milkTemp:20,
-    milkFoam:0,
-    milkQuality:0,
+    step:'grind', grindSize:5, dose:0, tampQuality:0,
+    yield:0, brewTime:0, pressure:0,
+    milkTemp:20, milkFoam:0, flushed:false,
     scores:{},
   };
 }
 resetBrew();
 
+const el = id => document.getElementById(id);
+
+/* Подпись задачи наверху — чтобы всегда было понятно, что делать руками. */
+const TASK = {
+  grind: ['Держите палец на кофемолке', 'кофе сыплется в рожок · нужно 18 г'],
+  tamp:  ['Тяните темпер вниз', 'прижмите кофе с усилием 15–20 кг'],
+  lock:  ['Перетащите рожок в группу', 'подхватите его пальцем и ведите вверх'],
+  brew:  ['Потяните рычаг вниз и держите', 'отпустите, когда в чашке будет 36 г'],
+  steam: ['Крутите вентиль пара', 'грейте молоко до 60–65 °C'],
+  serve: ['Готово', 'посмотрите оценку и подайте гостю'],
+};
+
 function renderMachine(){
   if(!current){
-    document.getElementById('steps').innerHTML = '';
-    document.getElementById('stepBox').innerHTML =
-      '<div class="empty"><div class="big">👋</div>Выберите гостя в зале — и начнём готовить.</div>';
-    setKeys({});
+    el('steps').innerHTML = '';
+    el('taskLine').innerHTML = 'Выберите гостя в зале';
+    el('tamperBox').hidden = true;
+    el('grinder').classList.remove('drop');
+    el('stepBox').innerHTML =
+      '<div class="empty"><div class="big">👋</div>Сначала примите заказ в зале.</div>';
     return;
   }
   const need = DRINKS[current.drink].steam;
   const list = STEP_LIST.filter(s => s.id !== 'steam' || need);
   const idx = list.findIndex(s => s.id === B.step);
-  document.getElementById('steps').innerHTML = list.map((s,i) =>
+  el('steps').innerHTML = list.map((s,i) =>
     `<div class="stp ${i===idx?'on':(i<idx?'done':'')}">${s.t}</div>`).join('');
-  drawStep();
-}
 
-function setKeys(state){
-  ['flush','lock','brew','steam'].forEach(k => {
-    const el = document.getElementById('k-'+k);
-    el.disabled = !state[k];
-    el.classList.toggle('on', !!state[k+'On']);
-  });
+  const t = TASK[B.step] || ['',''];
+  el('taskLine').innerHTML = t[0] + '<small>' + t[1] + '</small>';
+
+  // подсветка того, чем сейчас работаем
+  el('grinder').classList.toggle('drop', B.step === 'grind');
+  el('tamperBox').hidden = B.step !== 'tamp';
+  el('pf').style.opacity = 1;
+  el('leverHint').textContent = B.step === 'brew' ? 'тяни вниз' : '';
+  el('dockCap').innerHTML = B.step === 'lock' ? '<b>тащи вверх, в группу</b>' : 'Рожок';
+
+  drawStep();
 }
 
 function setGauge(bar){
   const pct = Math.max(0, Math.min(1, bar/15));
-  document.getElementById('gaugeArc').setAttribute('stroke-dasharray', (pct*113) + ' 264');
-  document.getElementById('barVal').textContent = bar.toFixed(1);
-  const c = bar >= 8 && bar <= 10 ? '#7CC5B0' : (bar > 0 ? '#F5C86B' : '#F5C86B');
-  document.getElementById('gaugeArc').setAttribute('stroke', c);
+  el('gaugeArc').setAttribute('stroke-dasharray', (pct*113) + ' 264');
+  el('barVal').textContent = bar.toFixed(1);
+  el('gaugeArc').setAttribute('stroke', bar >= 8 && bar <= 10 ? '#7CC5B0' : '#F5C86B');
 }
 
-const stepBox = document.getElementById('stepBox');
+/* ---------------- 1. НАСЫПАТЬ: держим палец на кофемолке ---------------- */
+(function(){
+  const g = el('grinder');
+  let timer = null, last = 0;
+  const PER_SEC = 11.25;
 
+  const start = e => {
+    if(B.step !== 'grind' || !current) return;
+    e.preventDefault();
+    if(timer) return;
+    g.classList.add('on');
+    el('gFall').style.height = '26px';
+    last = performance.now();
+    timer = setInterval(() => {
+      const now = performance.now();
+      B.dose = Math.min(25, B.dose + PER_SEC * (now - last)/1000);
+      last = now;
+      el('grounds').style.height = Math.min(16, B.dose * .9) + 'px';
+      const d = el('doseTxt'); if(d) d.textContent = B.dose.toFixed(1);
+      const bar = el('doseBar'); if(bar) bar.style.width = (B.dose/25*100) + '%';
+      if(B.dose >= 25) stop();
+    }, 30);
+  };
+  const stop = () => {
+    if(!timer) return;
+    clearInterval(timer); timer = null;
+    g.classList.remove('on');
+    el('gFall').style.height = '0';
+    if(B.dose < 6){ toast('Ещё чуть-чуть — нужно около 18 г'); return; }
+    B.scores.dose = 1 - Math.min(1, Math.abs(B.dose - 18) / 11);
+    B.step = 'tamp';
+    renderMachine();
+  };
+  g.addEventListener('pointerdown', start);
+  addEventListener('pointerup', stop);
+  addEventListener('pointercancel', stop);
+})();
+
+/* ---------------- 2. ТЕМПЕР: тянем вниз ---------------- */
+(function(){
+  const t = el('tamper');
+  let y0 = null, force = 0;
+  const down = e => {
+    if(B.step !== 'tamp') return;
+    e.preventDefault();
+    y0 = e.clientY; force = 0;
+    t.setPointerCapture && t.setPointerCapture(e.pointerId);
+  };
+  const move = e => {
+    if(y0 === null) return;
+    const dy = Math.max(0, Math.min(46, e.clientY - y0));
+    force = dy / 46 * 30;                     // 0..30 кг
+    t.style.transform = 'translateY(' + dy * .5 + 'px)';
+    const bar = el('tampBar'), txt = el('tampTxt');
+    if(bar) bar.style.width = (force/30*100) + '%';
+    if(txt) txt.textContent = force.toFixed(0);
+  };
+  const up = () => {
+    if(y0 === null) return;
+    y0 = null;
+    t.style.transform = '';
+    if(force < 3){ return; }                  // случайный тап — не считаем
+    B.tampQuality = 1 - Math.min(1, Math.abs(force - 17.5) / 20);
+    B.scores.tamp = B.tampQuality;
+    el('grounds').classList.add('tamped');
+    B.step = 'lock';
+    renderMachine();
+  };
+  t.addEventListener('pointerdown', down);
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+})();
+
+/* ---------------- 3. РОЖОК: перетаскиваем в группу ---------------- */
+(function(){
+  const pf = el('pf');
+  let drag = false, sx = 0, sy = 0;
+  const down = e => {
+    if(B.step !== 'lock') return;
+    e.preventDefault();
+    drag = true; sx = e.clientX; sy = e.clientY;
+    pf.classList.add('dragging');
+    el('groupArea') && el('groupArea').classList.add('drop');
+    pf.setPointerCapture && pf.setPointerCapture(e.pointerId);
+  };
+  const move = e => {
+    if(!drag) return;
+    pf.style.transform = 'translate(' + (e.clientX - sx) + 'px,' + (e.clientY - sy) + 'px)';
+  };
+  const up = e => {
+    if(!drag) return;
+    drag = false;
+    pf.classList.remove('dragging');
+    const area = document.querySelector('.groupArea');
+    area && area.classList.remove('drop');
+    // попал ли в область группы
+    const r = area.getBoundingClientRect();
+    const hit = e.clientX > r.left - 40 && e.clientX < r.right + 40 &&
+                e.clientY > r.top - 30 && e.clientY < r.bottom;
+    pf.style.transform = '';
+    if(hit){
+      pf.style.opacity = .25;
+      B.step = 'brew';
+      renderMachine();
+    } else {
+      toast('Ведите рожок к группе — под душ машины');
+    }
+  };
+  pf.addEventListener('pointerdown', down);
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+})();
+
+/* ---------------- 4. РЫЧАГ: тянем вниз, пока льётся ---------------- */
+let brewTimer = null;
+(function(){
+  const lv = el('lever');
+  let pulling = false;
+  const down = e => {
+    if(B.step !== 'brew') return;
+    e.preventDefault();
+    pulling = true;
+    lv.classList.add('pulled');
+    lv.setPointerCapture && lv.setPointerCapture(e.pointerId);
+    startBrew();
+  };
+  const up = () => {
+    if(!pulling) return;
+    pulling = false;
+    lv.classList.remove('pulled');
+    stopBrew();
+  };
+  lv.addEventListener('pointerdown', down);
+  addEventListener('pointerup', up);
+  addEventListener('pointercancel', up);
+})();
+
+function startBrew(){
+  if(brewTimer) return;
+  const stream = el('stream');
+  [...stream.children].forEach(i => i.style.height = '24px');
+  const resist = (10 - B.grindSize) * .12 + B.tampQuality * .35;
+  const rate = 3.6 / Math.max(.55, resist);
+  const t0 = performance.now();
+  let lastB = t0;
+  brewTimer = setInterval(() => {
+    const now = performance.now();
+    B.brewTime += (now - lastB) / 1000;
+    B.yield = Math.min(60, B.yield + rate * (now - lastB) / 1000);
+    lastB = now;
+    B.pressure = Math.min(11, 3 + resist * 7 + Math.sin(B.brewTime*3) * .25);
+    setGauge(B.pressure);
+    const bar = el('yieldBar'), txt = el('yieldTxt');
+    if(bar) bar.style.width = (B.yield/50*100) + '%';
+    if(txt) txt.textContent = B.yield.toFixed(1);
+    el('cupFill').style.height = Math.min(44, B.yield * 1.15) + 'px';
+    if(B.yield >= 60) stopBrew();
+  }, 50);
+}
+
+function stopBrew(){
+  if(!brewTimer) return;
+  clearInterval(brewTimer); brewTimer = null;
+  [...el('stream').children].forEach(i => i.style.height = '0');
+  setGauge(0);
+  if(B.yield < 4) return;              // рычаг дёрнули случайно
+  B.scores.yield = 1 - Math.min(1, Math.abs(B.yield - 36) / 26);
+  B.scores.time = 1;
+  B.step = DRINKS[current.drink].steam ? 'steam' : 'serve';
+  renderMachine();
+}
+
+/* ---------------- 5. ПАР: крутим вентиль ---------------- */
+let steamTimer = null;
+(function(){
+  const v = el('valve');
+  let a0 = null, angle = 0, open = 0;
+  const cen = () => { const r = v.getBoundingClientRect();
+                      return {x:r.left + r.width/2, y:r.top + r.height/2}; };
+  const down = e => {
+    if(B.step !== 'steam') return;
+    e.preventDefault();
+    const c = cen();
+    a0 = Math.atan2(e.clientY - c.y, e.clientX - c.x);
+    v.setPointerCapture && v.setPointerCapture(e.pointerId);
+  };
+  const move = e => {
+    if(a0 === null) return;
+    const c = cen();
+    const a = Math.atan2(e.clientY - c.y, e.clientX - c.x);
+    let d = a - a0; a0 = a;
+    if(d > Math.PI) d -= 2*Math.PI;
+    if(d < -Math.PI) d += 2*Math.PI;
+    angle += d * 180/Math.PI;
+    open = Math.max(0, Math.min(1, angle / 300));
+    v.querySelector('b').style.transform = 'rotate(' + angle + 'deg)';
+    if(open > .12) startSteam(); else stopSteamFlow();
+  };
+  const up = () => { a0 = null; };
+  v.addEventListener('pointerdown', down);
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+
+  function startSteam(){
+    if(steamTimer) return;
+    let lastS = performance.now();
+    steamTimer = setInterval(() => {
+      const now = performance.now(), dt = (now - lastS)/1000;
+      lastS = now;
+      B.milkTemp += 11.5 * dt * (0.5 + open);
+      if(B.milkTemp < 37) B.milkFoam = Math.min(100, B.milkFoam + 25 * dt);
+      const tb = el('tempBar'), tt = el('tempTxt'), fb = el('foamBar');
+      if(tb) tb.style.width = (B.milkTemp/85*100) + '%';
+      if(tt) tt.textContent = B.milkTemp|0;
+      if(fb) fb.style.width = B.milkFoam + '%';
+      if(B.milkTemp >= 85) finishSteam();
+    }, 60);
+  }
+  function stopSteamFlow(){
+    if(!steamTimer) return;
+    clearInterval(steamTimer); steamTimer = null;
+    if(B.milkTemp > 30) finishSteam();
+  }
+  window.__stopSteamFlow = stopSteamFlow;
+})();
+
+function finishSteam(){
+  if(steamTimer){ clearInterval(steamTimer); steamTimer = null; }
+  if(B.step !== 'steam') return;
+  const tempScore = 1 - Math.min(1, Math.abs(B.milkTemp - 62) / 32);
+  const foamScore = 1 - Math.min(1, Math.abs(B.milkFoam - 55) / 80);
+  B.scores.milk = tempScore * .65 + foamScore * .35;
+  B.step = 'serve';
+  renderMachine();
+}
+
+/* ---------------- промывка группы ---------------- */
+el('flushBtn').addEventListener('click', () => {
+  if(B.flushed){ toast('Уже промыто'); return; }
+  B.flushed = true;
+  el('flushBtn').classList.add('done');
+  el('flushBtn').textContent = '💧 Группа промыта';
+  const w = el('water');
+  w.style.height = '30px';
+  setTimeout(() => { w.style.height = '0'; }, 700);
+  toast('Чисто. Вкус будет лучше');
+});
+
+/* Нижняя карточка: шкалы текущего шага и экран подачи. */
 function drawStep(){
-  const g = current, d = DRINKS[g.drink];
+  const box = el('stepBox');
 
-  /* ---------- ПОМОЛ ---------- */
   if(B.step === 'grind'){
-    setKeys({});
-    document.getElementById('grounds').className = 'grounds empty';
-    document.getElementById('pf').className = 'pf out';
-    stepBox.innerHTML = `
-      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">1 · Помол</h3>
-      <div class="sub" style="margin-bottom:10px">Держите кнопку, пока в корзину не намелется <b>18 г</b>.
-        Тонкость помола решает, как быстро пойдёт вода.</div>
-      <div class="grindRow">
-        <span class="tag">тоньше</span>
-        <input type="range" id="grind" min="1" max="9" step="1" value="${B.grindSize}">
-        <span class="tag">грубее</span>
-      </div>
-      <div class="tag" style="text-align:center;margin-top:2px">помол: <b id="gsz">${grindWord(B.grindSize)}</b></div>
+    box.innerHTML = `
       <div class="meter">
         <div class="zone" style="left:${15/25*100}%;width:${6/25*100}%"></div>
         <i id="doseBar" style="width:${B.dose/25*100}%"></i>
-        <div class="txt"><span id="doseTxt">${B.dose.toFixed(1)}</span> г из 18</div>
+        <div class="txt"><span id="doseTxt">${B.dose.toFixed(1)}</span> г · нужно 18</div>
       </div>
-      <button class="btn p block" id="grindBtn" style="margin-top:12px">Держать — молоть</button>`;
-
-    const gr = document.getElementById('grind');
-    gr.addEventListener('input', () => {
-      B.grindSize = +gr.value;
-      document.getElementById('gsz').textContent = grindWord(B.grindSize);
-    });
-
-    const btn = document.getElementById('grindBtn');
-    let timer = null, last = 0;
-    // Считаем по прошедшему времени, а не по числу срабатываний таймера:
-    // в фоновой вкладке и на слабом телефоне интервалы тротлятся, и привязка
-    // к тикам ломает всю механику — доза набиралась бы в разы медленнее.
-    const GRIND_PER_SEC = 11.25;
-    const start = e => {
-      e.preventDefault();
-      if(timer) return;
-      last = performance.now();
-      timer = setInterval(() => {
-        const now = performance.now();
-        B.dose = Math.min(25, B.dose + GRIND_PER_SEC * (now - last) / 1000);
-        last = now;
-        document.getElementById('doseBar').style.width = (B.dose/25*100)+'%';
-        document.getElementById('doseTxt').textContent = B.dose.toFixed(1);
-        if(B.dose >= 25) stop();
-      }, 30);
-    };
-    const stop = () => {
-      if(!timer) return;
-      clearInterval(timer); timer = null;
-      if(B.dose < 8){ toast('Слишком мало — досыпьте'); return; }
-      B.scores.dose = 1 - Math.min(1, Math.abs(B.dose - 18) / 11);
-      B.step = 'tamp';
-      renderMachine();
-    };
-    btn.addEventListener('pointerdown', start);
-    btn.addEventListener('pointerup', stop);
-    btn.addEventListener('pointerleave', stop);
-    btn.addEventListener('pointercancel', stop);
+      <div class="muted" style="font-size:12.5px;margin-top:8px;text-align:center;color:var(--dim)">
+        Отпустите палец, когда стрелка войдёт в зелёную зону</div>`;
     return;
   }
 
-  /* ---------- ТЕМПЕР ---------- */
   if(B.step === 'tamp'){
-    setKeys({});
-    document.getElementById('grounds').className = 'grounds';
-    stepBox.innerHTML = `
-      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">2 · Темпер</h3>
-      <div class="sub" style="margin-bottom:10px">Прижмите кофе ровно, с усилием <b>15–20 кг</b>.
-        Слабо — вода пробьёт канал, сильно — пролив встанет.</div>
+    box.innerHTML = `
       <div class="meter">
         <div class="zone" style="left:${12/30*100}%;width:${11/30*100}%"></div>
         <i id="tampBar" style="width:0"></i>
         <div class="txt"><span id="tampTxt">0</span> кг</div>
       </div>
-      <button class="btn p block" id="tampBtn" style="margin-top:12px">Держать — прижимать</button>`;
-
-    const btn = document.getElementById('tampBtn');
-    let force = 0, timer = null, last = 0;
-    const FORCE_PER_SEC = 18.5;
-    const start = e => {
-      e.preventDefault();
-      if(timer) return;
-      last = performance.now();
-      timer = setInterval(() => {
-        const now = performance.now();
-        force = Math.min(30, force + FORCE_PER_SEC * (now - last) / 1000);
-        last = now;
-        document.getElementById('tampBar').style.width = (force/30*100)+'%';
-        document.getElementById('tampTxt').textContent = force.toFixed(0);
-      }, 30);
-    };
-    const stop = () => {
-      if(!timer) return;
-      clearInterval(timer); timer = null;
-      const q = 1 - Math.min(1, Math.abs(force - 17.5) / 20);
-      B.tampQuality = q;
-      B.scores.tamp = q;
-      document.getElementById('grounds').className = 'grounds tamped';
-      B.step = 'lock';
-      renderMachine();
-    };
-    btn.addEventListener('pointerdown', start);
-    btn.addEventListener('pointerup', stop);
-    btn.addEventListener('pointerleave', stop);
+      <div class="muted" style="font-size:12.5px;margin-top:8px;text-align:center;color:var(--dim)">
+        Тяните темпер вниз — чем дальше, тем сильнее прижим</div>`;
     return;
   }
 
-  /* ---------- ФИКСАЦИЯ РОЖКА ---------- */
   if(B.step === 'lock'){
-    setKeys({flush:true, lock:true});
-    stepBox.innerHTML = `
-      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">3 · Рожок в группу</h3>
-      <div class="sub">Нажмите <b>«Рожок»</b> — вставить и провернуть.
-        Промывка перед этим не обязательна, но улучшает вкус.</div>
-      <div class="tag" style="text-align:center;margin-top:10px" id="lockHint">
-        🔒 Нажмите «Рожок» на машине</div>`;
+    box.innerHTML = `
+      <div style="text-align:center;padding:6px 0">
+        <div style="font-size:34px;line-height:1">👇</div>
+        <div style="font-size:13.5px;color:var(--dim);margin-top:6px">
+          Подхватите рожок пальцем и ведите вверх, к душу машины</div>
+      </div>`;
     return;
   }
 
-  /* ---------- ПРОЛИВ ---------- */
   if(B.step === 'brew'){
-    setKeys({brew:true});
-    stepBox.innerHTML = `
-      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">4 · Пролив</h3>
-      <div class="sub">Остановите, когда в чашке будет <b>36 г</b>. Зелёная зона — попадание.</div>
+    box.innerHTML = `
       <div class="meter">
         <div class="zone" style="left:${29/50*100}%;width:${14/50*100}%"></div>
-        <i id="yieldBar" style="width:0"></i>
-        <div class="txt"><span id="yieldTxt">0.0</span> г · <span id="timeTxt">0.0</span> с</div>
+        <i id="yieldBar" style="width:${B.yield/50*100}%"></i>
+        <div class="txt"><span id="yieldTxt">${B.yield.toFixed(1)}</span> г · цель 36</div>
       </div>
-      <div class="tag" style="text-align:center;margin-top:8px" id="brewHint">Ждём запуска</div>`;
+      <div class="muted" style="font-size:12.5px;margin-top:8px;text-align:center;color:var(--dim)">
+        Держите рычаг. Отпустите — пролив остановится</div>`;
     return;
   }
 
-  /* ---------- МОЛОКО ---------- */
   if(B.step === 'steam'){
-    setKeys({steam:true});
-    stepBox.innerHTML = `
-      <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">5 · Молоко</h3>
-      <div class="sub">Держите пар. Сначала «затягиваем воздух» — растёт пена.
-        После <b>37 °C</b> пена больше не нужна, крутим воронку до <b>60–65 °C</b>.
-        Выше 70 °C молоко сгорит.</div>
+    box.innerHTML = `
       <div class="meter">
         <div class="zone" style="left:${54/85*100}%;width:${16/85*100}%"></div>
         <i id="tempBar" style="width:${B.milkTemp/85*100}%;background:var(--berry)"></i>
-        <div class="txt"><span id="tempTxt">${B.milkTemp|0}</span> °C</div>
+        <div class="txt"><span id="tempTxt">${B.milkTemp|0}</span> °C · цель 60–65</div>
       </div>
       <div class="meter" style="height:16px;margin-top:6px">
-        <i id="foamBar" style="width:0;background:var(--mint)"></i>
+        <i id="foamBar" style="width:${B.milkFoam}%;background:var(--mint)"></i>
         <div class="txt" style="font-size:10.5px">пена</div>
       </div>
-      <div class="tag" style="text-align:center;margin-top:8px" id="steamHint">Нажмите «Пар» и держите</div>`;
+      <div class="muted" style="font-size:12.5px;margin-top:8px;text-align:center;color:var(--dim)">
+        Крутите вентиль по кругу. Верните назад — пар закроется</div>`;
     return;
   }
 
-  /* ---------- ПОДАЧА ---------- */
   if(B.step === 'serve'){
-    setKeys({});
     const r = evaluate();
-    stepBox.innerHTML = `
+    box.innerHTML = `
       <div class="verdict">
         <div class="big">${r.face}</div>
         <h3>${r.title}</h3>
@@ -1170,128 +1419,22 @@ function drawStep(){
           +${r.pay} ₽${r.tip ? ' · чаевые +' + r.tip + ' ₽' : ''}</p>
       </div>
       <button class="btn m block" id="serveBtn">Подать гостю</button>`;
-    document.getElementById('serveBtn').addEventListener('click', () => finish(r));
+    el('serveBtn').addEventListener('click', () => finish(r));
     return;
   }
-}
-
-function grindWord(v){
-  return ['','очень тонкий','тонкий','тонкий','средне-тонкий','средний','средне-грубый','грубый','грубый','очень грубый'][v];
-}
-
-/* ---------- кнопки машины ---------- */
-document.getElementById('k-flush').addEventListener('click', () => {
-  if(B.step !== 'lock') return;
-  flowAnim(700, .25);
-  B.flushed = true;
-  document.getElementById('lockHint').innerHTML = '🔒 Теперь нажмите «Рожок» — вставить и провернуть';
-});
-
-document.getElementById('k-lock').addEventListener('click', () => {
-  if(B.step !== 'lock') return;
-  if(!B.flushed) toast('Совет: промывка группы улучшает вкус');   // не блокируем новичка
-  document.getElementById('pf').className = 'pf locked';
-  B.step = 'brew';
-  setTimeout(renderMachine, 380);
-});
-
-let brewTimer = null;
-document.getElementById('k-brew').addEventListener('click', () => {
-  if(B.step !== 'brew') return;
-  if(brewTimer){ stopBrew(); return; }
-  startBrew();
-});
-
-function startBrew(){
-  document.getElementById('k-brew').classList.add('on');
-  document.getElementById('brewHint').textContent = 'Идёт пролив — нажмите ещё раз, чтобы остановить';
-  const stream = document.getElementById('stream');
-  [...stream.children].forEach(i => i.style.height = '26px');
-
-  // Скорость пролива зависит от помола и темпера — как в жизни.
-  // Тонкий помол и плотный темп тормозят воду.
-  const resist = (10 - B.grindSize) * .12 + B.tampQuality * .35;
-  // Подобрано так, чтобы средний помол (5) с ровным темпером давал
-  // эталонные 36 г за ~27 с. Тоньше — дольше и горчит, грубее — быстро и кисло.
-  const rate = 3.6 / Math.max(.55, resist);   // г/с — темп игровой, не реальные 27 секунд
-
-  const t0 = performance.now();
-  let lastB = t0;
-  brewTimer = setInterval(() => {
-    const now = performance.now();
-    B.brewTime = (now - t0) / 1000;
-    B.yield = Math.min(60, B.yield + rate * (now - lastB) / 1000);
-    lastB = now;
-    B.pressure = Math.min(11, 3 + resist * 7 + Math.sin(B.brewTime*3)*.25);
-    setGauge(B.pressure);
-    document.getElementById('yieldBar').style.width = (B.yield/50*100)+'%';
-    document.getElementById('yieldTxt').textContent = B.yield.toFixed(1);
-    document.getElementById('timeTxt').textContent = B.brewTime.toFixed(1);
-    document.getElementById('cupFill').style.height = Math.min(52, B.yield*1.35) + 'px';
-    if(B.yield >= 60) stopBrew();
-  }, 50);
-}
-
-function stopBrew(){
-  clearInterval(brewTimer); brewTimer = null;
-  document.getElementById('k-brew').classList.remove('on');
-  [...document.getElementById('stream').children].forEach(i => i.style.height = '0');
-  setGauge(0);
-
-  B.scores.yield = 1 - Math.min(1, Math.abs(B.yield - 36) / 26);
-  B.scores.time  = 1;   // темп задаётся помолом, отдельно за секунды не наказываем
-
-  B.step = DRINKS[current.drink].steam ? 'steam' : 'serve';
-  renderMachine();
-}
-
-let steamTimer = null;
-document.getElementById('k-steam').addEventListener('click', () => {
-  if(B.step !== 'steam') return;
-  if(steamTimer){ stopSteam(); return; }
-  startSteam();
-});
-
-function startSteam(){
-  document.getElementById('k-steam').classList.add('on');
-  document.getElementById('steamHint').textContent = 'Пар идёт — остановите на 60–65 °C';
-  let lastS = performance.now();
-  const TEMP_PER_SEC = 11.5, FOAM_PER_SEC = 25;
-  steamTimer = setInterval(() => {
-    const now = performance.now(), dt = (now - lastS) / 1000;
-    lastS = now;
-    B.milkTemp += TEMP_PER_SEC * dt;
-    // воздух затягивается только пока молоко холодное — как в реальности
-    if(B.milkTemp < 37) B.milkFoam = Math.min(100, B.milkFoam + FOAM_PER_SEC * dt);
-    document.getElementById('tempBar').style.width = (B.milkTemp/85*100)+'%';
-    document.getElementById('tempTxt').textContent = B.milkTemp|0;
-    document.getElementById('foamBar').style.width = B.milkFoam + '%';
-    if(B.milkTemp >= 85) stopSteam();
-  }, 60);
-}
-
-function stopSteam(){
-  clearInterval(steamTimer); steamTimer = null;
-  document.getElementById('k-steam').classList.remove('on');
-  const tempScore = 1 - Math.min(1, Math.abs(B.milkTemp - 62) / 32);
-  const foamScore = 1 - Math.min(1, Math.abs(B.milkFoam - 55) / 80);
-  B.scores.milk = (tempScore * .65 + foamScore * .35);
-  B.step = 'serve';
-  renderMachine();
-}
-
-function flowAnim(ms, h){
-  const stream = document.getElementById('stream');
-  [...stream.children].forEach(i => i.style.height = (26*h)+'px');
-  setTimeout(() => [...stream.children].forEach(i => i.style.height = '0'), ms);
 }
 
 /* ---------- оценка ---------- */
 function evaluate(){
   const sc = B.scores;
-  const parts = [sc.dose, sc.tamp, sc.yield, sc.time];
-  if(sc.milk != null) parts.push(sc.milk);
-  const avg = parts.reduce((a,b) => a + (b||0), 0) / parts.length;
+  // Пролив весит вдвое: в эспрессо он решает вкус сильнее всего.
+  // Раньше в среднее подмешивались всегда-единичные слагаемые, и чашка
+  // с 10 г вместо 36 получала четыре звезды.
+  const parts = [sc.dose || 0, sc.tamp || 0, (sc.yield || 0) * 2];
+  let weight = 4;
+  if(sc.milk != null){ parts.push(sc.milk); weight += 1; }
+  let avg = parts.reduce((a,b) => a + b, 0) / weight;
+  if(B.flushed) avg = Math.min(1, avg + .05);   // промывка — небольшой честный бонус
 
   const notes = [];
   if(sc.dose < .6) notes.push(B.dose < 18 ? 'Мало кофе в корзине — вкус пустой' : 'Переполнена корзина');
@@ -1306,6 +1449,7 @@ function evaluate(){
     if(B.milkFoam < 25) notes.push('Пены почти нет');
     else if(B.milkFoam > 80) notes.push('Пена как мыло — слишком много воздуха');
   }
+  if(!B.flushed) notes.push('Группу не промыли — привкус вчерашней гущи');
   if(!notes.length) notes.push('Всё по регламенту. Крема плотная, вкус сбалансирован.');
 
   const stars = Math.max(1, Math.min(5, Math.round(avg * 4.4 + 0.7)));
