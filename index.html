@@ -218,6 +218,19 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
   justify-content:center;background:rgba(255,251,246,.94);padding:20px;text-align:center}
 .mgOver.hide{display:none}
 .mgOver .big{font-size:44px;margin-bottom:8px}
+.jStages{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;margin-top:6px}
+.jSt{font-size:10.5px;font-weight:800;color:var(--dim);background:var(--cream2);
+  padding:6px 8px;border-radius:9px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:52px}
+.jSt .e{font-size:16px}
+.jArr{color:var(--dim2);font-size:11px}
+.jFact{background:var(--cream2);border-radius:12px;padding:12px 14px;font-size:12.5px;
+  color:var(--ink);line-height:1.5;margin:4px 0 16px;max-width:34ch;text-align:left}
+.jTable{width:100%;max-width:300px;margin:6px 0}
+.jRow{display:flex;justify-content:space-between;padding:7px 0;font-size:13.5px;
+  border-bottom:1px solid var(--line);color:var(--dim)}
+.jRow b{color:var(--ink)}
+.jRow.total{border-bottom:0;border-top:2px solid var(--ink);margin-top:4px;
+  padding-top:9px;font-weight:800;color:var(--ink);font-size:15px}
 .mgOver h3{font-size:20px;font-weight:900;margin-bottom:6px}
 .mgOver p{color:var(--dim);font-size:14px;margin-bottom:16px;max-width:30ch}
 
@@ -485,7 +498,7 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
   <section class="screen" id="s-games">
     <div class="pad">
       <h2>Мини-игры</h2>
-      <div class="sub">Здесь зарабатываются добавки. Их просят гости — без них заказ выполнить нельзя.</div>
+      <div class="sub">Дополнительный режим: весь путь кофе от плантации до чашки. Добавки, заработанные здесь, тратятся в основной работе за машиной.</div>
       <div id="gamesList"></div>
     </div>
   </section>
@@ -1666,334 +1679,294 @@ document.getElementById('shopGrid').addEventListener('click', e => {
 /* =========================================================================
    МИНИ-ИГРЫ
    ========================================================================= */
-const GAMES = [
-  { id:'marsh', name:'Лови зефирки', em:'🍡', reward:'marsh',
-    desc:'Ловите падающие зефирки чашкой кофе. Промах — минус жизнь.',
-    hint:'Двигайте палец или мышь · 30 секунд · лёд ловить нельзя' },
-  { id:'syrup', name:'Точный сироп', em:'🍯', reward:'syrup',
-    desc:'Остановите налив ровно на отметке. Пять раз подряд.',
-    hint:'Нажмите, когда полоса войдёт в зелёную зону' },
-  { id:'beans', name:'Перебор зёрен', em:'🌰', reward:'cinn',
-    desc:'Уберите с ленты пережаренные зёрна, хорошие не трогайте.',
-    hint:'Нажимайте только на тёмные зёрна' },
-];
+let J = null;   // текущий проход «Пути кофе»
 
-function renderGames(){
-  document.getElementById('gamesList').innerHTML = GAMES.map(g => `
-    <div class="card" style="display:flex;gap:13px;align-items:center">
-      <div style="font-size:34px"><img src="${ICON[EXTRAS[g.reward].ic]}" alt="" width="38" height="38"></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:800;font-size:15px">${g.name}</div>
-        <div style="font-size:13px;color:var(--dim);margin-top:2px">${g.desc}</div>
-        <div style="font-size:11.5px;color:var(--crema);font-weight:800;margin-top:5px">
-          награда: ${EXTRAS[g.reward].name}</div>
-      </div>
-      <button class="btn p" data-play="${g.id}" style="padding:11px 16px">Играть</button>
-    </div>`).join('');
-}
-document.getElementById('gamesList').addEventListener('click', e => {
-  const b = e.target.closest('[data-play]');
-  if(b) openGame(b.dataset.play);
-});
-
-const mgWrap = document.getElementById('mgWrap');
+/* ---------- игровое окно: общая обвязка для этапов ---------- */
+const mgWrap   = document.getElementById('mgWrap');
 const mgCanvas = document.getElementById('mgCanvas');
-const mgOver = document.getElementById('mgOver');
+const mgOver   = document.getElementById('mgOver');
 const ctx = mgCanvas.getContext ? mgCanvas.getContext('2d') : null;
 let RAF = null, GAME = null, VW = 0, VH = 0, DPR = 1;
 
-document.getElementById('mgClose').addEventListener('click', closeGame);
-mgWrap.addEventListener('click', e => { if(e.target === mgWrap) closeGame(); });
-
+/** Подгоняет холст под ширину окна, сохраняя пропорцию этапа. */
 function fit(w, h){
+  if(!ctx) return;
   const box = mgCanvas.parentElement.getBoundingClientRect();
-  DPR = Math.min(devicePixelRatio||1, 2);
-  VW = Math.floor(box.width);
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  VW = Math.max(260, Math.floor(box.width));
   VH = Math.round(VW * h / w);
-  const maxH = Math.round(innerHeight * .58);
-  if(VH > maxH){ VH = maxH; }
-  mgCanvas.width = VW*DPR; mgCanvas.height = VH*DPR;
-  mgCanvas.style.height = VH+'px';
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const maxH = Math.round(innerHeight * .55);
+  if(VH > maxH) VH = maxH;
+  mgCanvas.width = VW * DPR;
+  mgCanvas.height = VH * DPR;
+  mgCanvas.style.height = VH + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
 
-function openGame(id){
-  const g = GAMES.find(x => x.id === id);
-  if(!g || !ctx){ toast('Игра недоступна в этом браузере'); return; }
-  document.getElementById('mgName').textContent = g.name;
-  document.getElementById('mgHint').textContent = g.hint;
-  mgOver.classList.add('hide');
-  mgWrap.classList.add('on');
-  requestAnimationFrame(() => {
-    GAME = BUILD[id](g);
-    (function loop(){ if(!GAME) return; GAME.step(); RAF = requestAnimationFrame(loop); })();
-  });
-}
 function closeGame(){
   if(RAF) cancelAnimationFrame(RAF);
   RAF = null;
   if(GAME && GAME.stop) GAME.stop();
   GAME = null;
+  J = null;
   mgWrap.classList.remove('on');
+  document.getElementById('mgScore').textContent = '';
 }
-function gameOver(title, txt, won, reward, count){
-  if(RAF) cancelAnimationFrame(RAF); RAF = null;
-  if(GAME && GAME.stop) GAME.stop();
-  if(won && count > 0){
-    S.stock[reward] = (S.stock[reward]||0) + count;
-    save(); hud();
-  }
+document.getElementById('mgClose').addEventListener('click', closeGame);
+mgWrap.addEventListener('click', e => { if(e.target === mgWrap) closeGame(); });
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && mgWrap.classList.contains('on')) closeGame();
+});
+
+/* =========================================================================
+   ПУТЬ КОФЕ — дополнительный режим
+   Пять этапов подряд, от ягоды на ветке до чашки перед гостем.
+   Между этапами короткая карточка с фактом: это и передышка, и смысл.
+   Основная игра — работа за машиной; этот режим её не заменяет.
+   ========================================================================= */
+const JOURNEY = [
+  { id:'harvest', name:'Плантация',  em:'🌱',
+    task:'Собирайте только спелые — тёмно-красные. Зелёные ещё не готовы.',
+    hint:'Нажимайте на спелые ягоды · 25 секунд',
+    fact:'Кофе — не боб, а косточка ягоды. Её до сих пор во многих странах собирают вручную: на одном кусте ягоды спеют неравномерно.' },
+  { id:'sort',    name:'Сортировка', em:'🌰',
+    task:'Уберите с ленты пережаренные и битые зёрна. Хорошие не трогайте.',
+    hint:'Нажимайте только на тёмные зёрна · 25 секунд',
+    fact:'Одно испорченное зерно на сотню способно испортить вкус всей партии. Поэтому спешелти-кофе перебирают вручную.' },
+  { id:'roast',   name:'Обжарка',    em:'🔥',
+    task:'Грейте до первого щелчка и снимайте. Передержите — будет горечь.',
+    hint:'Держите палец · отпустите в зелёной зоне',
+    fact:'При обжарке зерно дважды щёлкает. После первого щелчка получается светлая обжарка с кислинкой, после второго — тёмная и горькая.' },
+  { id:'grind',   name:'Помол',      em:'⚙️',
+    task:'Поймайте нужную тонкость помола. Три попытки подряд.',
+    hint:'Нажмите, когда метка войдёт в зелёную зону',
+    fact:'Для эспрессо нужен помол как сахарная пудра, для френч-пресса — как морская соль. Одна и та же ошибка помола делает кофе кислым или горьким.' },
+  { id:'art',     name:'Подача',     em:'🎨',
+    task:'Проведите пальцем по контуру — влейте молоко в рисунок.',
+    hint:'Ведите палец по пунктиру, не отрывая',
+    fact:'Латте-арт — не только красота: ровный рисунок означает правильную микропену, а значит и вкус.' },
+];
+
+/* награда за весь путь: чем чище прошли, тем больше добавок */
+function journeyReward(score){
+  const max = JOURNEY.length * 100;
+  const pct = score / max;
+  if(pct >= .8) return { marsh:2, syrup:1, cinn:1, cream:1 };
+  if(pct >= .55) return { marsh:1, syrup:1, cinn:1 };
+  if(pct >= .3) return { marsh:1, cinn:1 };
+  return { cinn:1 };
+}
+
+function renderGames(){
+  const best = +(localStorage.getItem('coffeeshop.journeyBest') || 0);
+  document.getElementById('gamesList').innerHTML = `
+    <div class="card" style="text-align:center;padding:22px">
+      <div style="font-size:40px;line-height:1">🌍</div>
+      <h3 style="font-size:19px;font-weight:800;margin:8px 0 6px">Путь кофе</h3>
+      <div style="font-size:13.5px;color:var(--dim);margin-bottom:14px;line-height:1.5">
+        Пять этапов подряд — от ягоды на ветке до чашки перед гостем.
+        Дополнительный режим: добавки, которые тут заработаете,
+        пригодятся в основной работе.</div>
+      <div class="jStages">
+        ${JOURNEY.map((st,i)=>`<div class="jSt"><span class="e">${st.em}</span>${st.name}</div>`).join('<span class="jArr">→</span>')}
+      </div>
+      ${best ? `<div style="font-size:12.5px;color:var(--dim);margin-top:12px">Лучший результат: <b>${best}</b> из ${JOURNEY.length*100}</div>` : ''}
+      <button class="btn p block" id="startJourney" style="margin-top:16px">Пройти путь</button>
+    </div>`;
+  document.getElementById('startJourney').addEventListener('click', startJourney);
+}
+
+/* ---------------- движок режима ---------------- */
+
+function startJourney(){
+  if(!ctx){ toast('Игры недоступны в этом браузере'); return; }
+  J = { idx: 0, score: 0, results: [] };
+  mgWrap.classList.add('on');
+  showStageIntro();
+}
+
+function showStageIntro(){
+  const st = JOURNEY[J.idx];
+  document.getElementById('mgName').textContent = `${J.idx+1}/${JOURNEY.length} · ${st.name}`;
+  document.getElementById('mgScore').textContent = J.score;
+  document.getElementById('mgHint').textContent = st.hint;
   mgOver.classList.remove('hide');
   mgOver.innerHTML = `
-    <div class="big">${won ? '🎉' : '💤'}</div>
-    <h3>${title}</h3>
-    <p>${txt}</p>
-    ${won && count > 0 ? `<div class="chip have" style="font-size:14px;padding:8px 16px;margin-bottom:14px">
-       <img src="${ICON[EXTRAS[reward].ic]}" alt="" width="18" height="18" style="vertical-align:-4px;margin-right:4px">${EXTRAS[reward].name} +${count}</div>` : ''}
-    <button class="btn p" id="mgAgain">Ещё раз</button>
-    <button class="btn" id="mgExit" style="margin-top:8px">Закрыть</button>`;
-  const id = GAME && GAME.id;
-  document.getElementById('mgAgain').addEventListener('click', () => { GAME = null; openGame(id); });
-  document.getElementById('mgExit').addEventListener('click', closeGame);
+    <div class="big">${st.em}</div>
+    <h3>${st.name}</h3>
+    <p>${st.task}</p>
+    <button class="btn p" id="jGo">Начать этап</button>`;
+  document.getElementById('jGo').addEventListener('click', () => {
+    mgOver.classList.add('hide');
+    GAME = BUILD[st.id]();
+    (function loop(){ if(!GAME) return; GAME.step(); RAF = requestAnimationFrame(loop); })();
+  });
+}
+
+/** Этап закончился: показываем факт и ведём дальше. */
+function stageDone(points, note){
+  if(RAF) cancelAnimationFrame(RAF); RAF = null;
+  if(GAME && GAME.stop) GAME.stop();
   GAME = null;
+  const st = JOURNEY[J.idx];
+  const p = Math.max(0, Math.min(100, Math.round(points)));
+  J.score += p;
+  J.results.push({ name: st.name, points: p });
+  document.getElementById('mgScore').textContent = J.score;
+
+  const last = J.idx >= JOURNEY.length - 1;
+  mgOver.classList.remove('hide');
+  mgOver.innerHTML = `
+    <div class="big">${p >= 70 ? '👏' : p >= 40 ? '🙂' : '😅'}</div>
+    <h3>${st.name}: ${p} из 100</h3>
+    <p>${note || ''}</p>
+    <div class="jFact">${st.fact}</div>
+    <button class="btn p" id="jNext">${last ? 'Посмотреть итог' : 'Дальше'}</button>`;
+  document.getElementById('jNext').addEventListener('click', () => {
+    if(last) return finishJourney();
+    J.idx++;
+    showStageIntro();
+  });
 }
 
-/* ---------- 1. ЛОВИ ЗЕФИРКИ ---------- */
-function marshGame(meta){
-  const W = 400, H = 300;
-  fit(W, H);
+function finishJourney(){
+  const max = JOURNEY.length * 100;
+  const reward = journeyReward(J.score);
+  Object.keys(reward).forEach(k => { S.stock[k] = (S.stock[k] || 0) + reward[k]; });
+    // Пол-ставки за очко: чашка приносит 120–230 ₽, и режим не должен
+  // обесценивать основную работу за машиной.
+  const money = Math.round(J.score * 0.5);
+  S.money += money;
+  save(); hud();
+
+  const prev = +(localStorage.getItem('coffeeshop.journeyBest') || 0);
+  if(J.score > prev){ try{ localStorage.setItem('coffeeshop.journeyBest', J.score); }catch(e){} }
+
+  const rows = J.results.map(r => `<div class="jRow"><span>${r.name}</span><b>${r.points}</b></div>`).join('');
+  const gifts = Object.keys(reward).map(k =>
+    `<span class="chip have"><img src="${ICON[EXTRAS[k].ic]}" alt="" width="14" height="14"
+      style="vertical-align:-3px;margin-right:3px">${EXTRAS[k].name} +${reward[k]}</span>`).join(' ');
+
+  mgOver.classList.remove('hide');
+  mgOver.innerHTML = `
+    <div class="big">☕</div>
+    <h3>Путь пройден</h3>
+    <div class="jTable">${rows}
+      <div class="jRow total"><span>Итого</span><b>${J.score} из ${max}</b></div></div>
+    <div style="margin:12px 0 4px">${gifts}</div>
+    <p style="margin-top:8px">И ${money} ₽ выручки за партию.</p>
+    <button class="btn p" id="jAgain">Пройти снова</button>
+    <button class="btn" id="jExit" style="margin-top:8px">Закрыть</button>`;
+  document.getElementById('jAgain').addEventListener('click', startJourney);
+  document.getElementById('jExit').addEventListener('click', () => { J = null; closeGame(); });
+}
+
+/* ---------- ЭТАП 1: ПЛАНТАЦИЯ ---------- */
+function harvestGame(){
+  const W = 400, H = 300; fit(W, H);
   const k = () => VW / W;
-  const self = { id:'marsh' };
-  // Раунд на время, а не на жизни: при плотном потоке поймать всё физически
-  // невозможно, и отнимать жизнь за пропуск — значит наказывать за то,
-  // на что игрок не влияет. Пропуск просто не приносит очков,
-  // а штрафует только пойманный лёд.
-  let cupX = W/2, items = [], score = 0, t = 0, spawn = 0;
-  const ROUND = 30;
-  const tStart = performance.now();
-  let timeLeft = ROUND;
+  const self = {};
+  let berries = [], picked = 0, wrong = 0, t = 0;
+  const t0 = performance.now(), ROUND = 25;
+  let left = ROUND;
 
-  const move = e => {
-    const r = mgCanvas.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-    cupX = Math.max(30, Math.min(W-30, x / k()));
-    if(e.touches) e.preventDefault();
-  };
-  mgCanvas.addEventListener('mousemove', move);
-  mgCanvas.addEventListener('touchmove', move, {passive:false});
-  mgCanvas.addEventListener('touchstart', move, {passive:false});
-  self.stop = () => {
-    mgCanvas.removeEventListener('mousemove', move);
-    mgCanvas.removeEventListener('touchmove', move);
-    mgCanvas.removeEventListener('touchstart', move);
-  };
-
-  self.step = function(){
-    t++;
-    timeLeft = Math.max(0, ROUND - (performance.now() - tStart)/1000);
-    if(timeLeft <= 0) return end();
-    // спавн: зефирки и изредка кубик льда (ловить нельзя)
-    if(--spawn <= 0){
-      spawn = Math.max(15, 44 - t/45);
-      items.push({
-        x: 26 + Math.random()*(W-52), y:-16,
-        v: 2.3 + Math.random()*1.5 + t/1500,
-        bad: Math.random() < .18,
-        r: 11 + Math.random()*3,
-        rot: Math.random()*6,
-      });
-    }
-    for(let i = items.length-1; i >= 0; i--){
-      const o = items[i];
-      o.y += o.v; o.rot += .05;
-      // поймано?
-      if(o.y > H-56 && o.y < H-26 && Math.abs(o.x - cupX) < 26){
-        items.splice(i,1);
-        if(o.bad) score = Math.max(0, score - 3);   // лёд в кофе — минус
-        else score++;
-        continue;
-      }
-      if(o.y > H+20) items.splice(i,1);            // пропуск не штрафуется
-    }
-    draw();
-  };
-
-  function end(){
-    // Пороги выставлены по прогону: идеальная игра даёт около 45–50,
-    // поэтому три добавки — награда за действительно чистый раунд.
-    const count = score >= 55 ? 3 : score >= 38 ? 2 : score >= 22 ? 1 : 0;
-    gameOver(count ? 'Поймано!' : 'Не хватило',
-      `Собрано зефирок: ${score}. ` + (count ? 'Забирайте в склад.' : 'Нужно хотя бы 22 за раунд.'),
-      count > 0, 'marsh', count);
-  }
-
-  function draw(){
-    const s = k();
-    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
-    ctx.clearRect(0,0,W,H);
-
-    // зефирки
-    items.forEach(o => {
-      ctx.save(); ctx.translate(o.x,o.y); ctx.rotate(o.rot);
-      if(o.bad){
-        ctx.fillStyle = '#BFE3F2';
-        roundRect(-o.r,-o.r,o.r*2,o.r*2,4); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; ctx.stroke();
-      } else {
-        ctx.fillStyle = ['#FFD9E4','#FFF2D5','#E7F5D8'][Math.floor(o.rot)%3];
-        roundRect(-o.r,-o.r*.75,o.r*2,o.r*1.5,o.r*.7); ctx.fill();
-        ctx.strokeStyle = 'rgba(200,150,160,.35)'; ctx.lineWidth = 1.5; ctx.stroke();
-      }
-      ctx.restore();
+  // куст: ягоды висят гроздьями и постепенно доспевают
+  for(let i = 0; i < 26; i++){
+    berries.push({
+      x: 30 + Math.random()*(W-60), y: 40 + Math.random()*(H-90),
+      r: 9 + Math.random()*3,
+      ripe: Math.random() < .55,
+      ripening: Math.random()*8,     // через сколько секунд дозреет
+      gone: false, pop: 0,
     });
-
-    // чашка
-    ctx.save(); ctx.translate(cupX, H-40);
-    ctx.fillStyle = '#6B4326';
-    ctx.beginPath(); ctx.ellipse(0,-6,26,7,0,0,6.283); ctx.fill();
-    ctx.fillStyle = '#FFFBF6';
-    ctx.beginPath();
-    ctx.moveTo(-29,-8); ctx.lineTo(29,-8);
-    ctx.quadraticCurveTo(26,26, 0,26);
-    ctx.quadraticCurveTo(-26,26, -29,-8);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#D8C6B4'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.beginPath(); ctx.arc(36,2,10,-1.1,1.1); ctx.stroke();
-    // пар
-    ctx.strokeStyle = 'rgba(180,150,130,.35)'; ctx.lineWidth = 2.5;
-    for(let i=-1;i<2;i++){
-      ctx.beginPath();
-      ctx.moveTo(i*11,-12);
-      ctx.quadraticCurveTo(i*11+Math.sin(t/14+i)*6,-24, i*11,-34);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // счёт и жизни
-    ctx.fillStyle = '#8A7266';
-    ctx.font = '700 13px Nunito, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('Зефирки: ' + score, 12, 22);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = timeLeft <= 6 ? '#E27373' : '#8A7266';
-    ctx.fillText(timeLeft.toFixed(0) + ' с', W-12, 22);
-    document.getElementById('mgScore').textContent = score;
-  }
-  function roundRect(x,y,w,h,r){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
-  }
-  return self;
-}
-
-/* ---------- 2. ТОЧНЫЙ СИРОП ---------- */
-function syrupGame(){
-  const W = 400, H = 260;
-  fit(W, H);
-  const k = () => VW / W;
-  const self = { id:'syrup' };
-  let pos = 0, dir = 1, speed = 1.6, round = 0, hits = 0, done = false;
-  const TARGET = { c: 0, w: 0 };
-  newRound();
-
-  function newRound(){
-    TARGET.w = Math.max(9, 20 - round*2);
-    TARGET.c = 25 + Math.random()*50;
-    speed = 1.5 + round*.35;
-    pos = 0; dir = 1;
   }
 
   const tap = e => {
     e.preventDefault();
-    if(done) return;
-    const diff = Math.abs(pos - TARGET.c);
-    if(diff <= TARGET.w/2){ hits++; }
-    round++;
-    if(round >= 5){ done = true; return end(); }
-    newRound();
+    const r = mgCanvas.getBoundingClientRect();
+    const x = ((e.touches?e.touches[0].clientX:e.clientX) - r.left)/k();
+    const y = ((e.touches?e.touches[0].clientY:e.clientY) - r.top)/k();
+    for(let i = berries.length-1; i >= 0; i--){
+      const b = berries[i];
+      if(b.gone) continue;
+      if(Math.hypot(b.x-x, b.y-y) < b.r + 6){
+        if(b.ripe){ picked++; b.gone = true; b.pop = 10; }
+        else { wrong++; b.pop = -8; }
+        return;
+      }
+    }
   };
   mgCanvas.addEventListener('pointerdown', tap);
   self.stop = () => mgCanvas.removeEventListener('pointerdown', tap);
 
   self.step = function(){
-    if(!done){
-      pos += dir * speed;
-      if(pos >= 100){ pos = 100; dir = -1; }
-      if(pos <= 0){ pos = 0; dir = 1; }
+    t++;
+    left = Math.max(0, ROUND - (performance.now()-t0)/1000);
+    berries.forEach(b => {
+      if(!b.ripe && !b.gone){ b.ripening -= 1/60; if(b.ripening <= 0) b.ripe = true; }
+      if(b.pop > 0) b.pop--; else if(b.pop < 0) b.pop++;
+    });
+    if(left <= 0){
+      const pts = Math.max(0, picked * 5 - wrong * 6);
+      return stageDone(Math.min(100, pts),
+        `Собрано спелых: ${picked}` + (wrong ? `, сорвано зелёных: ${wrong}` : ', ни одной зелёной'));
     }
     draw();
   };
 
-  function end(){
-    const count = hits >= 5 ? 3 : hits >= 4 ? 2 : hits >= 3 ? 1 : 0;
-    gameOver(count ? 'Налито ровно!' : 'Мимо меры',
-      `Точных наливов: ${hits} из 5.` + (count ? '' : ' Нужно хотя бы 3.'),
-      count > 0, 'syrup', count);
-  }
-
   function draw(){
     const s = k();
     ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
-    ctx.clearRect(0,0,W,H);
-
-    // бутылка сиропа
-    ctx.fillStyle = '#E0A867';
-    roundRect2(30, 40, 46, 86, 8); ctx.fill();
-    ctx.fillStyle = '#C98A4B';
-    roundRect2(42, 26, 22, 18, 4); ctx.fill();
-
-    // стакан
-    ctx.strokeStyle = '#D8C6B4'; ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(250,60); ctx.lineTo(258,170);
-    ctx.lineTo(322,170); ctx.lineTo(330,60);
-    ctx.stroke();
-    const fillH = 105 * (pos/100);
-    ctx.fillStyle = 'rgba(224,168,103,.75)';
-    ctx.fillRect(258, 168-fillH, 64, fillH);
-
-    // шкала
-    const barY = 205, barX = 40, barW = W-80;
-    ctx.fillStyle = '#F0E3D5';
-    roundRect2(barX, barY, barW, 22, 11); ctx.fill();
-    ctx.fillStyle = 'rgba(124,197,176,.55)';
-    const zx = barX + barW*(TARGET.c - TARGET.w/2)/100;
-    ctx.fillRect(zx, barY, barW*TARGET.w/100, 22);
-    ctx.fillStyle = '#C98A4B';
-    const px = barX + barW*pos/100;
-    roundRect2(px-4, barY-5, 8, 32, 4); ctx.fill();
-
-    ctx.fillStyle = '#8A7266';
-    ctx.font = '700 13px Nunito, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`Налив ${Math.min(round+1,5)} из 5`, 12, 22);
+    ctx.fillStyle = '#EAF3E2'; ctx.fillRect(0,0,W,H);
+    // ветки
+    ctx.strokeStyle = '#7A9E6B'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    for(let i = 0; i < 4; i++){
+      const y = 60 + i*62;
+      ctx.beginPath(); ctx.moveTo(-10, y);
+      ctx.quadraticCurveTo(W/2, y - 18 + (i%2)*36, W+10, y); ctx.stroke();
+    }
+    // листья
+    ctx.fillStyle = '#8FBE7C';
+    for(let i = 0; i < 14; i++){
+      const lx = (i*57 + 20) % W, ly = 50 + (i*43) % (H-80);
+      ctx.save(); ctx.translate(lx, ly); ctx.rotate(i);
+      ctx.beginPath(); ctx.ellipse(0,0,15,7,0,0,6.283); ctx.fill(); ctx.restore();
+    }
+    // ягоды
+    berries.forEach(b => {
+      if(b.gone) return;
+      const rr = b.r + (b.pop>0 ? b.pop*.4 : 0) + (b.pop<0 ? b.pop*.3 : 0);
+      ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, 6.283);
+      ctx.fillStyle = b.ripe ? '#C62F2F' : '#8CC152';
+      ctx.fill();
+      ctx.strokeStyle = b.ripe ? '#8E1E1E' : '#6B9C3A'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(b.x - rr*.3, b.y - rr*.3, rr*.28, 0, 6.283);
+      ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fill();
+    });
+    ctx.fillStyle = '#5B6B52'; ctx.font = '700 13px Nunito, sans-serif';
+    ctx.textAlign = 'left'; ctx.fillText('Спелых: ' + picked, 12, 22);
     ctx.textAlign = 'right';
-    ctx.fillText('точно: ' + hits, W-12, 22);
-    document.getElementById('mgScore').textContent = hits + '/5';
-  }
-  function roundRect2(x,y,w,h,r){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+    ctx.fillStyle = left <= 6 ? '#C62F2F' : '#5B6B52';
+    ctx.fillText(left.toFixed(0) + ' с', W-12, 22);
+    document.getElementById('mgScore').textContent = J.score + '+' + picked*5;
   }
   return self;
 }
 
-/* ---------- 3. ПЕРЕБОР ЗЁРЕН ---------- */
-function beansGame(){
-  const W = 400, H = 280;
-  fit(W, H);
+/* ---------- ЭТАП 2: СОРТИРОВКА ---------- */
+function sortGame(){
+  const W = 400, H = 280; fit(W, H);
   const k = () => VW / W;
-  const self = { id:'beans' };
-  let beans = [], t = 0, good = 0, mistakes = 0, spawn = 0, left = 100*60/60;
-  let timeLeft = 30;
+  const self = {};
+  let beans = [], good = 0, mistakes = 0, spawn = 0, t = 0;
+  const t0 = performance.now(), ROUND = 25;
+  let left = ROUND;
 
   const tap = e => {
     e.preventDefault();
     const r = mgCanvas.getBoundingClientRect();
-    const x = ((e.touches?e.touches[0].clientX:e.clientX) - r.left) / k();
-    const y = ((e.touches?e.touches[0].clientY:e.clientY) - r.top) / k();
+    const x = ((e.touches?e.touches[0].clientX:e.clientX) - r.left)/k();
+    const y = ((e.touches?e.touches[0].clientY:e.clientY) - r.top)/k();
     for(let i = beans.length-1; i >= 0; i--){
       const b = beans[i];
       if(Math.hypot(b.x-x, b.y-y) < 20){
@@ -2006,67 +1979,279 @@ function beansGame(){
   mgCanvas.addEventListener('pointerdown', tap);
   self.stop = () => mgCanvas.removeEventListener('pointerdown', tap);
 
-  const t0 = performance.now();
   self.step = function(){
     t++;
-    timeLeft = Math.max(0, 30 - (performance.now()-t0)/1000);
+    left = Math.max(0, ROUND - (performance.now()-t0)/1000);
     if(--spawn <= 0){
-      spawn = 26;
-      beans.push({ x:-20, y: 90 + Math.random()*120, burnt: Math.random() < .38,
-                   rot: Math.random()*6, shake:0 });
+      spawn = 24;
+      beans.push({ x:-20, y: 80 + Math.random()*130, burnt: Math.random() < .4,
+                   rot: Math.random()*6, shake: 0 });
     }
-    beans.forEach(b => { b.x += 1.5; if(b.shake > 0) b.shake--; });
+    beans.forEach(b => { b.x += 1.6; if(b.shake > 0) b.shake--; });
     beans = beans.filter(b => b.x < W+30);
-    if(timeLeft <= 0) return end();
+    if(left <= 0){
+      const pts = Math.max(0, good * 7 - mistakes * 8);
+      return stageDone(Math.min(100, pts),
+        `Убрано брака: ${good}` + (mistakes ? `, задето хороших: ${mistakes}` : ', хорошие не тронуты'));
+    }
     draw();
   };
-
-  function end(){
-    const score = good - mistakes*2;
-    const count = score >= 14 ? 3 : score >= 9 ? 2 : score >= 5 ? 1 : 0;
-    gameOver(count ? 'Отобрано!' : 'Слабовато',
-      `Убрано пережаренных: ${good}, ошибок: ${mistakes}.` + (count ? '' : ' Нужно больше.'),
-      count > 0, 'cinn', count);
-  }
 
   function draw(){
     const s = k();
     ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
-    ctx.clearRect(0,0,W,H);
-
-    // лента
-    ctx.fillStyle = '#E8DACB';
-    ctx.fillRect(0, 70, W, 170);
+    ctx.fillStyle = '#FBF3E8'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#E8DACB'; ctx.fillRect(0, 60, W, 170);
     ctx.strokeStyle = 'rgba(140,110,90,.22)'; ctx.lineWidth = 3;
     for(let i = 0; i < 12; i++){
-      const x = ((i*40 + t*1.5) % (W+40)) - 20;
-      ctx.beginPath(); ctx.moveTo(x,70); ctx.lineTo(x-14,240); ctx.stroke();
+      const x = ((i*40 + t*1.6) % (W+40)) - 20;
+      ctx.beginPath(); ctx.moveTo(x, 60); ctx.lineTo(x-14, 230); ctx.stroke();
     }
-
     beans.forEach(b => {
       ctx.save();
       ctx.translate(b.x + (b.shake ? Math.sin(b.shake*2)*3 : 0), b.y);
       ctx.rotate(b.rot);
       ctx.fillStyle = b.burnt ? '#3A2019' : '#9C6239';
       ctx.beginPath(); ctx.ellipse(0,0,15,10,0,0,6.283); ctx.fill();
-      ctx.strokeStyle = b.burnt ? '#241009' : '#7A4A2A';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = b.burnt ? '#241009' : '#7A4A2A'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(-11,0); ctx.quadraticCurveTo(0,5,11,0); ctx.stroke();
       ctx.restore();
     });
-
-    ctx.fillStyle = '#8A7266';
-    ctx.font = '700 13px Nunito, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('Убрано: ' + good + '  ошибок: ' + mistakes, 12, 24);
+    ctx.fillStyle = '#8A7266'; ctx.font = '700 13px Nunito, sans-serif';
+    ctx.textAlign = 'left'; ctx.fillText('Брак: ' + good + '   ошибок: ' + mistakes, 12, 24);
     ctx.textAlign = 'right';
-    ctx.fillText(timeLeft.toFixed(0) + ' с', W-12, 24);
-    document.getElementById('mgScore').textContent = good;
+    ctx.fillStyle = left <= 6 ? '#C62F2F' : '#8A7266';
+    ctx.fillText(left.toFixed(0) + ' с', W-12, 24);
+    document.getElementById('mgScore').textContent = J.score;
   }
   return self;
 }
 
-const BUILD = { marsh: marshGame, syrup: syrupGame, beans: beansGame };
+/* ---------- ЭТАП 3: ОБЖАРКА ---------- */
+function roastGame(){
+  const W = 400, H = 280; fit(W, H);
+  const k = () => VW / W;
+  const self = {};
+  let temp = 20, holding = false, done = false, t = 0, crack = 0;
+  const TARGET_LO = 196, TARGET_HI = 216, MAX = 250;   // окно первого щелчка
+  let last = performance.now();
+
+  const down = e => { e.preventDefault(); holding = true; };
+  const up = () => {
+    if(!holding || done) return;
+    holding = false; done = true;
+    const inZone = temp >= TARGET_LO && temp <= TARGET_HI;
+    const dist = inZone ? 0 : Math.min(Math.abs(temp-TARGET_LO), Math.abs(temp-TARGET_HI));
+    const pts = Math.max(0, 100 - dist * 3.2);
+    const note = temp < TARGET_LO ? `Сняли рано, ${temp|0} °C — зерно осталось травянистым`
+               : temp > TARGET_HI ? `Передержали до ${temp|0} °C — горечь и дым`
+               : `Ровно на первом щелчке, ${temp|0} °C`;
+    stageDone(pts, note);
+  };
+  mgCanvas.addEventListener('pointerdown', down);
+  addEventListener('pointerup', up);
+  self.stop = () => { mgCanvas.removeEventListener('pointerdown', down);
+                      removeEventListener('pointerup', up); };
+
+  self.step = function(){
+    t++;
+    const now = performance.now(), dt = Math.min(.1, (now-last)/1000); last = now;
+    if(holding && !done){
+      temp += 42 * dt;
+      if(temp >= TARGET_LO && crack === 0) crack = 26;      // первый щелчок
+      if(temp >= MAX){ holding = false; done = true;
+        return stageDone(0, 'Зерно сгорело — партия в мусор'); }
+    }
+    if(crack > 0) crack--;
+    draw();
+  };
+
+  function draw(){
+    const s = k();
+    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
+    const heat = Math.min(1, Math.max(0, (temp-20)/230));
+    ctx.fillStyle = '#2B211B'; ctx.fillRect(0,0,W,H);
+
+    // барабан ростера
+    ctx.save(); ctx.translate(W/2, 120);
+    ctx.fillStyle = '#4A3A31';
+    ctx.beginPath(); ctx.arc(0,0,72,0,6.283); ctx.fill();
+    ctx.strokeStyle = '#6E574A'; ctx.lineWidth = 6; ctx.stroke();
+    // зёрна внутри крутятся и темнеют
+    for(let i = 0; i < 9; i++){
+      const a = t*0.035 + i*0.7, rr = 20 + (i%3)*16;
+      ctx.save(); ctx.translate(Math.cos(a)*rr, Math.sin(a)*rr); ctx.rotate(a);
+      const c = Math.round(150 - heat*110);
+      ctx.fillStyle = `rgb(${c+40},${c},${Math.round(c*0.7)})`;
+      ctx.beginPath(); ctx.ellipse(0,0,11,7,0,0,6.283); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // щелчок
+    if(crack > 0){
+      ctx.fillStyle = `rgba(245,200,107,${crack/26})`;
+      ctx.font = '800 18px Nunito, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('ЩЁЛК!', W/2, 100);
+    }
+
+    // шкала температуры
+    const bx = 40, by = 220, bw = W-80;
+    ctx.fillStyle = '#3E332C'; ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(bx,by,bw,20,10) : ctx.rect(bx,by,bw,20); ctx.fill();
+    ctx.fillStyle = 'rgba(92,184,127,.5)';
+    ctx.fillRect(bx + bw*(TARGET_LO-20)/230, by, bw*(TARGET_HI-TARGET_LO)/230, 20);
+    ctx.fillStyle = heat > .78 ? '#E27373' : '#F5C86B';
+    ctx.fillRect(bx, by, bw*Math.min(1,(temp-20)/230), 20);
+    ctx.fillStyle = '#FBF3E8'; ctx.font = '800 13px Nunito, sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText((temp|0) + ' °C', W/2, by+15);
+    ctx.fillStyle = 'rgba(251,243,232,.7)'; ctx.font = '700 12px Nunito, sans-serif';
+    ctx.fillText(done ? '' : (holding ? 'отпустите на щелчке' : 'держите палец'), W/2, 262);
+    document.getElementById('mgScore').textContent = J.score;
+  }
+  return self;
+}
+
+/* ---------- ЭТАП 4: ПОМОЛ ---------- */
+function grindGame(){
+  const W = 400, H = 260; fit(W, H);
+  const k = () => VW / W;
+  const self = {};
+  let pos = 0, dir = 1, speed = 1.7, round = 0, hits = 0, done = false;
+  const TARGET = { c: 0, w: 0 };
+  newRound();
+  function newRound(){
+    TARGET.w = Math.max(11, 22 - round*3);
+    TARGET.c = 25 + Math.random()*50;
+    speed = 1.6 + round*.4; pos = 0; dir = 1;
+  }
+  const tap = e => {
+    e.preventDefault();
+    if(done) return;
+    if(Math.abs(pos - TARGET.c) <= TARGET.w/2) hits++;
+    round++;
+    if(round >= 3){
+      done = true;
+      return stageDone(Math.round(hits/3*100),
+        hits === 3 ? 'Помол идеально ровный' : hits ? `Точных настроек: ${hits} из 3` : 'Помол гуляет — вкус будет нестабильным');
+    }
+    newRound();
+  };
+  mgCanvas.addEventListener('pointerdown', tap);
+  self.stop = () => mgCanvas.removeEventListener('pointerdown', tap);
+
+  self.step = function(){
+    if(!done){ pos += dir*speed; if(pos>=100){pos=100;dir=-1;} if(pos<=0){pos=0;dir=1;} }
+    const s = k();
+    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
+    ctx.fillStyle = '#FBF3E8'; ctx.fillRect(0,0,W,H);
+    // жернова
+    ctx.save(); ctx.translate(W/2, 100);
+    ctx.fillStyle = '#8D99A3'; ctx.beginPath(); ctx.arc(0,0,58,0,6.283); ctx.fill();
+    ctx.strokeStyle = '#6E7B85'; ctx.lineWidth = 4;
+    for(let i=0;i<10;i++){
+      const a = i*0.628 + (done?0:pos*0.05);
+      ctx.beginPath(); ctx.moveTo(Math.cos(a)*20, Math.sin(a)*20);
+      ctx.lineTo(Math.cos(a)*54, Math.sin(a)*54); ctx.stroke();
+    }
+    ctx.fillStyle = '#4A3229'; ctx.beginPath(); ctx.arc(0,0,17,0,6.283); ctx.fill();
+    ctx.restore();
+    // шкала
+    const bx = 40, by = 195, bw = W-80;
+    ctx.fillStyle = '#EADCCB'; ctx.fillRect(bx,by,bw,22);
+    ctx.fillStyle = 'rgba(124,197,176,.6)';
+    ctx.fillRect(bx + bw*(TARGET.c-TARGET.w/2)/100, by, bw*TARGET.w/100, 22);
+    ctx.fillStyle = '#C98A4B';
+    ctx.fillRect(bx + bw*pos/100 - 3, by-5, 6, 32);
+    ctx.fillStyle = '#8A7266'; ctx.font = '700 13px Nunito, sans-serif';
+    ctx.textAlign='left'; ctx.fillText(`Настройка ${Math.min(round+1,3)} из 3`, 12, 24);
+    ctx.textAlign='right'; ctx.fillText('точно: ' + hits, W-12, 24);
+    document.getElementById('mgScore').textContent = J.score;
+  };
+  return self;
+}
+
+/* ---------- ЭТАП 5: ЛАТТЕ-АРТ ---------- */
+function artGame(){
+  const W = 400, H = 300; fit(W, H);
+  const k = () => VW / W;
+  const self = {};
+  // контур сердца — точки, которые нужно «пройти» пальцем
+  const pts = [];
+  for(let i = 0; i <= 40; i++){
+    const t = i/40 * Math.PI*2;
+    const x = 16*Math.pow(Math.sin(t),3);
+    const y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+    pts.push({ x: W/2 + x*5.2, y: 150 - y*5.2, hit:false });
+  }
+  let drawing = false, trail = [], done = false;
+
+  const at = e => {
+    const r = mgCanvas.getBoundingClientRect();
+    return { x: ((e.touches?e.touches[0].clientX:e.clientX)-r.left)/k(),
+             y: ((e.touches?e.touches[0].clientY:e.clientY)-r.top)/k() };
+  };
+  const down = e => { e.preventDefault(); if(done) return; drawing = true; trail = []; };
+  const move = e => {
+    if(!drawing || done) return;
+    e.preventDefault();
+    const p = at(e);
+    trail.push(p);
+    pts.forEach(q => { if(!q.hit && Math.hypot(q.x-p.x, q.y-p.y) < 22) q.hit = true; });
+  };
+  const up = () => {
+    if(!drawing || done) return;
+    drawing = false; done = true;
+    const hit = pts.filter(p => p.hit).length;
+    const pct = Math.round(hit / pts.length * 100);
+    stageDone(pct,
+      pct >= 85 ? 'Ровное сердце — молоко влито идеально'
+      : pct >= 55 ? 'Узор угадывается, но края смазаны'
+      : 'Рисунок расплылся — пена слишком жидкая');
+  };
+  mgCanvas.addEventListener('pointerdown', down);
+  mgCanvas.addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+  self.stop = () => {
+    mgCanvas.removeEventListener('pointerdown', down);
+    mgCanvas.removeEventListener('pointermove', move);
+    removeEventListener('pointerup', up);
+  };
+
+  self.step = function(){
+    const s = k();
+    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
+    ctx.fillStyle = '#F3E5D6'; ctx.fillRect(0,0,W,H);
+    // чашка сверху
+    ctx.fillStyle = '#FFFBF6';
+    ctx.beginPath(); ctx.arc(W/2, 150, 118, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = '#D8C6B4'; ctx.lineWidth = 8; ctx.stroke();
+    ctx.fillStyle = '#B4753C';
+    ctx.beginPath(); ctx.arc(W/2, 150, 104, 0, 6.283); ctx.fill();
+    // пунктирный контур
+    pts.forEach(p => {
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.hit ? 7 : 4.5, 0, 6.283);
+      ctx.fillStyle = p.hit ? '#FFFBF6' : 'rgba(255,251,246,.42)';
+      ctx.fill();
+    });
+    // след пальца — «молоко»
+    if(trail.length > 1){
+      ctx.strokeStyle = '#FFFBF6'; ctx.lineWidth = 13;
+      ctx.lineJoin = ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(trail[0].x, trail[0].y);
+      trail.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.stroke();
+    }
+    const hit = pts.filter(p => p.hit).length;
+    ctx.fillStyle = '#8A7266'; ctx.font = '700 13px Nunito, sans-serif';
+    ctx.textAlign = 'left'; ctx.fillText('Пройдено: ' + Math.round(hit/pts.length*100) + '%', 12, 22);
+    document.getElementById('mgScore').textContent = J.score;
+  };
+  return self;
+}
+
+const BUILD = { harvest: harvestGame, sort: sortGame, roast: roastGame,
+                grind: grindGame, art: artGame };
 
 /* =========================================================================
    СТАРТ
