@@ -120,6 +120,31 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
 .svgBrand{font-size:13px;font-weight:900;fill:#EDF2F5;letter-spacing:.16em;opacity:.9}
 .svgGauge{font-size:8px;font-weight:800;fill:#C9D4DB}
 
+/* Пар. Клубы поднимаются, растут и тают — три штуки со сдвигом фазы,
+   чтобы струя выглядела живой, а не пульсировала синхронно. */
+#steamPuffs .puff ellipse{fill:#FFFFFF;opacity:.75}
+#station.steaming #steamPuffs{opacity:1}
+#station.steaming .puff{animation:puff 1.5s ease-out infinite}
+#station.steaming .p2{animation-delay:.5s}
+#station.steaming .p3{animation-delay:1s}
+@keyframes puff{
+  0%  {transform:translateY(0) scale(.35);opacity:.85}
+  60% {opacity:.5}
+  100%{transform:translateY(-46px) scale(1.5);opacity:0}
+}
+#station.hot #cupSteam{opacity:.55}
+#station.hot .curl{animation:curl 2.4s ease-in-out infinite;transform-origin:bottom}
+#station.hot .c2{animation-delay:.6s}
+#station.hot .c3{animation-delay:1.2s}
+@keyframes curl{
+  0%  {opacity:0;transform:translateY(6px) scaleY(.7)}
+  35% {opacity:.6}
+  100%{opacity:0;transform:translateY(-16px) scaleY(1.15)}
+}
+@media (prefers-reduced-motion: reduce){
+  #station.steaming .puff, #station.hot .curl{animation:none}
+}
+
 #grinder{transition:transform .08s}
 #grinder.on{transform:translateY(2px)}
 #leverArm{transform-origin:131px 92px;transition:transform .14s cubic-bezier(.4,1.3,.5,1)}
@@ -390,6 +415,28 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
           </g>
           <text x="352" y="170" text-anchor="middle" class="svgCap">ПАР</text>
           <text x="352" y="181" text-anchor="middle" class="svgCapB">крути</text>
+
+          <!-- пар из трубки и от чашки: включается классами на #station -->
+          <g id="steamPuffs" opacity="0">
+            <g class="puff p1"><ellipse cx="341" cy="150" rx="7" ry="9"/></g>
+            <g class="puff p2"><ellipse cx="335" cy="150" rx="5" ry="7"/></g>
+            <g class="puff p3"><ellipse cx="347" cy="150" rx="6" ry="8"/></g>
+          </g>
+          <g id="cupSteam" opacity="0">
+            <path class="curl c1" d="M226 148 q-7 -12 0 -24 q7 -12 0 -22" fill="none"
+                  stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+            <path class="curl c2" d="M238 144 q-7 -12 0 -24 q7 -12 0 -22" fill="none"
+                  stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+            <path class="curl c3" d="M250 148 q-7 -12 0 -24 q7 -12 0 -22" fill="none"
+                  stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+          </g>
+
+          <!-- индикатор нагрева бойлера: машина должна прогреться, как настоящая -->
+          <g id="boiler">
+            <rect x="112" y="76" width="58" height="9" rx="4.5" fill="#2C343A"/>
+            <rect id="boilerFill" x="114" y="78" width="0" height="5" rx="2.5" fill="#F5C86B"/>
+            <text x="141" y="70" text-anchor="middle" class="svgCap">БОЙЛЕР</text>
+          </g>
 
           <!-- ================= ПОДДОН ================= -->
           <rect x="180" y="196" width="180" height="16" rx="4" fill="#39434B"/>
@@ -1131,6 +1178,7 @@ function resetBrew(){
     el('grounds').setAttribute('fill', '#4A3229');
     el('cupFill').setAttribute('height', 0);
     el('cupFill').setAttribute('y', 29);
+    el('station').classList.remove('hot', 'steaming');
     el('pf').style.opacity = 1;
     el('flushBtn').classList.remove('done');
     el('flushBtn').textContent = '💧 Промыть группу';
@@ -1191,6 +1239,27 @@ function setGauge(bar){
   el('needle').setAttribute('stroke', bar >= 8 && bar <= 10 ? '#5CB87F' : '#E8807F');
   el('barVal').textContent = bar.toFixed(1);
 }
+
+/* ---------------- прогрев бойлера ----------------
+   Из принципа работы: помпа гонит воду через нагретый бойлер под 9 бар,
+   и пока он не вышел на рабочие ~93 °C, эспрессо получится жидким.
+   Здесь это фон: бойлер греется сам, но если начать пролив раньше —
+   оценка просядет. */
+let boilerPct = 0;
+(function(){
+  let last = performance.now();
+  setInterval(() => {
+    if(document.hidden) { last = performance.now(); return; }
+    const now = performance.now(), dt = (now - last) / 1000;
+    last = now;
+    boilerPct = Math.min(100, boilerPct + dt * 12);      // полный прогрев ~8 с
+    const f = el('boilerFill');
+    if(f){
+      f.setAttribute('width', 54 * boilerPct / 100);
+      f.setAttribute('fill', boilerPct >= 95 ? '#5CB87F' : '#F5C86B');
+    }
+  }, 200);
+})();
 
 /* ---------------- 1. НАСЫПАТЬ: держим палец на кофемолке ---------------- */
 (function(){
@@ -1337,6 +1406,7 @@ let brewTimer = null;
 function startBrew(){
   if(brewTimer) return;
   [...el('stream').children].forEach(i => i.setAttribute('height', 30));
+  B.boilerAtStart = boilerPct;
   const resist = (10 - B.grindSize) * .12 + B.tampQuality * .35;
   const rate = 3.6 / Math.max(.55, resist);
   const t0 = performance.now();
@@ -1354,6 +1424,7 @@ function startBrew(){
     const fh = Math.min(30, B.yield * .8);
     el('cupFill').setAttribute('height', fh);
     el('cupFill').setAttribute('y', 29 - fh);
+    if(B.yield > 6) el('station').classList.add('hot');
     if(B.yield >= 60) stopBrew();
   }, 50);
 }
@@ -1407,6 +1478,7 @@ let steamTimer = null;
     steamTimer = setInterval(() => {
       const now = performance.now(), dt = (now - lastS)/1000;
       lastS = now;
+      el('station').classList.add('steaming');
       B.milkTemp += 11.5 * dt * (0.5 + open);
       if(B.milkTemp < 37) B.milkFoam = Math.min(100, B.milkFoam + 25 * dt);
       const tb = el('tempBar'), tt = el('tempTxt'), fb = el('foamBar');
@@ -1417,6 +1489,7 @@ let steamTimer = null;
     }, 60);
   }
   function stopSteamFlow(){
+    el('station').classList.remove('steaming');
     if(!steamTimer) return;
     clearInterval(steamTimer); steamTimer = null;
     if(B.milkTemp > 30) finishSteam();
@@ -1426,6 +1499,7 @@ let steamTimer = null;
 
 function finishSteam(){
   if(steamTimer){ clearInterval(steamTimer); steamTimer = null; }
+  el('station').classList.remove('steaming');
   if(B.step !== 'steam') return;
   const tempScore = 1 - Math.min(1, Math.abs(B.milkTemp - 62) / 32);
   const foamScore = 1 - Math.min(1, Math.abs(B.milkFoam - 55) / 80);
@@ -1540,6 +1614,7 @@ function evaluate(){
   if(sc.milk != null){ parts.push(sc.milk); weight += 1; }
   let avg = parts.reduce((a,b) => a + b, 0) / weight;
   if(B.flushed) avg = Math.min(1, avg + .05);   // промывка — небольшой честный бонус
+  if(B.boilerAtStart != null && B.boilerAtStart < 90) avg *= .8;   // холодная машина
 
   const notes = [];
   if(sc.dose < .6) notes.push(B.dose < 18 ? 'Мало кофе в корзине — вкус пустой' : 'Переполнена корзина');
@@ -1554,6 +1629,8 @@ function evaluate(){
     if(B.milkFoam < 25) notes.push('Пены почти нет');
     else if(B.milkFoam > 80) notes.push('Пена как мыло — слишком много воздуха');
   }
+  if(B.boilerAtStart != null && B.boilerAtStart < 90)
+    notes.push('Бойлер не прогрелся — экстракция слабая, вкус пустой');
   if(!B.flushed) notes.push('Группу не промыли — привкус вчерашней гущи');
   if(!notes.length) notes.push('Всё по регламенту. Крема плотная, вкус сбалансирован.');
 
