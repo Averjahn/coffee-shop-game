@@ -110,6 +110,7 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
 /* ---------- станция бариста ---------- */
 .taskLine{background:var(--crema);color:#fff;border-radius:12px;padding:9px 14px;
   font-size:13.5px;font-weight:800;text-align:center;margin-bottom:10px;line-height:1.35}
+.taskLine:empty, .steps:empty, .card:empty{display:none}
 .taskLine small{display:block;font-weight:700;opacity:.85;font-size:11.5px;margin-top:2px}
 
 .rig{margin-bottom:10px}
@@ -255,17 +256,12 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
     <div class="day">Смена <b id="served">0 гостей</b></div>
   </div>
 
-  <!-- ЗАЛ -->
+  <!-- КОФЕЙНЯ: зал сверху, наше рабочее место снизу — всё на одном экране,
+       чтобы кофемашина никогда не пропадала из виду -->
   <section class="screen on" id="s-hall">
     <div class="shopScene"><canvas id="scene"></canvas></div>
-    <div class="pad" style="padding-top:12px">
+    <div class="pad" style="padding-top:10px">
       <div id="pickBox"></div>
-    </div>
-  </section>
-
-  <!-- МАШИНА -->
-  <section class="screen" id="s-machine">
-    <div class="pad">
       <div class="steps" id="steps"></div>
       <div class="taskLine" id="taskLine"></div>
 
@@ -425,6 +421,37 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
             </g>
             <text x="657" y="672" text-anchor="middle" class="svgCapB">тяни вниз</text>
           </g>
+
+          <!-- ================= СТОЙКА ВЫДАЧИ =================
+               Готовый напиток не «телепортируется» гостю: его ставят сюда,
+               и гость забирает сам — как в настоящей кофейне. -->
+          <g id="pickup">
+            <rect x="744" y="556" width="150" height="86" rx="10" fill="#8A5A3B"/>
+            <rect x="744" y="556" width="150" height="13" rx="6" fill="#A6714A"/>
+            <rect id="pickupGlow" x="740" y="552" width="158" height="94" rx="12"
+                  fill="none" stroke="#5CB87F" stroke-width="5" opacity="0"/>
+            <text x="819" y="602" text-anchor="middle" class="svgCap"
+                  style="font-size:26px">ВЫДАЧА</text>
+            <text x="819" y="664" text-anchor="middle" class="svgCapB" id="pickupHint"></text>
+          </g>
+
+          <!-- готовая чашка: появляется на этапе подачи и перетаскивается -->
+          <g id="doneCup" opacity="0" style="cursor:grab;pointer-events:none">
+            <g transform="translate(470,556)">
+              <ellipse cx="0" cy="60" rx="34" ry="7" fill="rgba(0,0,0,.22)"/>
+              <path d="M-26 0 h52 a4 4 0 0 1 4 4 l-5 38 a10 10 0 0 1 -10 8 h-30 a10 10 0 0 1 -10 -8 l-5 -38 a4 4 0 0 1 4 -4 z"
+                    fill="#FFFBF6" stroke="#D8C6B4" stroke-width="3"/>
+              <path d="M-22 6 h44 l-4 34 a8 8 0 0 1 -8 6 h-20 a8 8 0 0 1 -8 -6 z" fill="url(#crema)"/>
+              <path d="M26 8 a12 12 0 0 1 0 22" fill="none" stroke="#D8C6B4" stroke-width="4"/>
+              <g id="doneSteam" fill="none" stroke="#FFFFFF" stroke-width="3"
+                 stroke-linecap="round" opacity=".75">
+                <path d="M-10 -6 q6 -10 0 -20"><animate attributeName="opacity" values=".7;.1;.7"
+                      dur="2.4s" repeatCount="indefinite"/></path>
+                <path d="M8 -6 q6 -12 0 -24"><animate attributeName="opacity" values=".3;.75;.3"
+                      dur="2.9s" repeatCount="indefinite"/></path>
+              </g>
+            </g>
+          </g>
         </svg>
 
         <button class="flushBtn" id="flushBtn">💧 Промыть группу</button>
@@ -490,7 +517,6 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
       </div>
 
       <div class="card" id="stepBox"></div>
-      <button class="btn block" id="backHall">← В зал</button>
     </div>
   </section>
 
@@ -518,8 +544,7 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
   </div>
 
   <nav class="tabs">
-    <button class="tab on" data-s="hall"><span class="ic">🪑</span>Зал<span class="badge" id="bGuests" hidden>0</span></button>
-    <button class="tab" data-s="machine"><span class="ic">⚙️</span>Машина</button>
+    <button class="tab on" data-s="hall"><span class="ic">☕</span>Кофейня<span class="badge" id="bGuests" hidden>0</span></button>
     <button class="tab" data-s="games"><span class="ic">🎮</span>Игры</button>
     <button class="tab" data-s="shop"><span class="ic">🧺</span>Склад</button>
   </nav>
@@ -602,6 +627,7 @@ function load(){
 function save(){ try{ localStorage.setItem(SAVE, JSON.stringify(S)); }catch(e){} }
 
 let guests = [];
+let seated = [];    // те, кому подали: сидят за столиком и пьют
 let leaving = [];   // те, кто идёт к двери и вот-вот исчезнет
 let current = null;      // обслуживаемый гость
 let guestSeq = 0;
@@ -611,23 +637,23 @@ let guestSeq = 0;
    ========================================================================= */
 const screens = {
   hall: document.getElementById('s-hall'),
-  machine: document.getElementById('s-machine'),
   games: document.getElementById('s-games'),
   shop: document.getElementById('s-shop'),
 };
 let tab = 'hall';
 
 function go(name){
+  // Зал и машина теперь один экран: старые вызовы go('machine') ведут туда же.
+  if(name === 'machine') name = 'hall';
   tab = name;
   Object.keys(screens).forEach(k => screens[k].classList.toggle('on', k === name));
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.s === name));
   if(name === 'shop') renderShop();
   if(name === 'games') renderGames();
-  if(name === 'machine') renderMachine();
+  if(name === 'hall') renderMachine();
 }
 document.querySelectorAll('.tab').forEach(b =>
   b.addEventListener('click', () => go(b.dataset.s)));
-document.getElementById('backHall').addEventListener('click', () => go('hall'));
 
 function hud(){
   document.getElementById('money').textContent = Math.round(S.money);
@@ -689,10 +715,22 @@ function spawnGuest(){
    Гость входит в дверь слева, идёт по залу и встаёт в очередь к стойке.
    Рисуется на canvas: так персонажи могут ходить, а не просто лежать списком.
    ========================================================================= */
-const SW = 420, SH = 330;          // логические размеры сцены
-const DOOR_X = 46;                 // где дверь
-const QUEUE_X = [232, 190, 148, 106];  // места в очереди, первое — у стойки
-const FLOOR_Y = 250;               // линия пола, на ней стоят ноги
+// Зал занимает верхнюю часть экрана, поэтому он приземистый: всё, что ниже, —
+// уже наше рабочее место. Смотрим из-за прилавка, гости в очереди стоят к нам лицом.
+const SW = 420, SH = 276;          // логические размеры сцены
+const DOOR_X = 40;                 // где дверь
+const WALL_Y = 150;                // где стена переходит в пол
+const QUEUE_X = [318, 268, 218, 168];  // места в очереди, первое — у самой стойки
+const FLOOR_Y = 254;               // линия, на которой стоят ноги стоящих гостей
+const BAR_Y = 236;                 // ближний край нашего прилавка
+
+// Столики: гость, которому подали кофе, садится и пьёт, а не растворяется.
+// scale — глубина: дальний столик мельче.
+const TABLES = [
+  { x: 74,  y: 214, scale: 1.00, busy: null },
+  { x: 158, y: 196, scale: .86,  busy: null },
+  { x: 246, y: 182, scale: .74,  busy: null },
+];
 
 const sceneCv = document.getElementById('scene');
 const sctx = sceneCv.getContext ? sceneCv.getContext('2d') : null;
@@ -721,144 +759,217 @@ document.addEventListener('visibilitychange', () => { if(!document.hidden) scene
 /* ---------- интерьер ---------- */
 function drawRoom(){
   const c = sctx;
-  // стена
-  c.fillStyle = '#F6E5D2'; c.fillRect(0, 0, SW, FLOOR_Y);
-  // обои — тонкая полоска
-  c.strokeStyle = 'rgba(201,138,75,.10)'; c.lineWidth = 8;
-  for(let x = 10; x < SW; x += 26){ c.beginPath(); c.moveTo(x, 0); c.lineTo(x, FLOOR_Y); c.stroke(); }
-  // пол
-  c.fillStyle = '#D9B48C'; c.fillRect(0, FLOOR_Y, SW, SH - FLOOR_Y);
-  c.strokeStyle = 'rgba(120,80,50,.18)'; c.lineWidth = 2;
-  for(let i = 0; i < 9; i++){
-    const x = i * 54 - 20;
-    c.beginPath(); c.moveTo(x, FLOOR_Y); c.lineTo(x - 26, SH); c.stroke();
-  }
-  c.strokeStyle = 'rgba(120,80,50,.22)'; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(0, FLOOR_Y); c.lineTo(SW, FLOOR_Y); c.stroke();
 
-  // ---- кирпичная кладка у входа
-  c.fillStyle = '#CF9E86';
-  c.fillRect(0, 0, 92, FLOOR_Y);
-  c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2;
-  for(let row = 0; row * 16 < FLOOR_Y; row++){
-    const yy = row * 16;
-    c.beginPath(); c.moveTo(0, yy); c.lineTo(92, yy); c.stroke();
-    const off = row % 2 ? 0 : 17;
-    for(let bx2 = off; bx2 < 92; bx2 += 34){
-      c.beginPath(); c.moveTo(bx2, yy); c.lineTo(bx2, yy + 16); c.stroke();
+  // ---- стена
+  const wall = c.createLinearGradient(0, 0, 0, WALL_Y);
+  wall.addColorStop(0, '#F8EADA'); wall.addColorStop(1, '#EFD9C2');
+  c.fillStyle = wall; c.fillRect(0, 0, SW, WALL_Y);
+  c.strokeStyle = 'rgba(201,138,75,.09)'; c.lineWidth = 7;
+  for(let x = 8; x < SW; x += 24){ c.beginPath(); c.moveTo(x, 0); c.lineTo(x, WALL_Y); c.stroke(); }
+
+  // ---- пол, доски сходятся к точке схода: так зал кажется глубоким
+  c.fillStyle = '#D9B48C'; c.fillRect(0, WALL_Y, SW, SH - WALL_Y);
+  c.strokeStyle = 'rgba(120,80,50,.16)'; c.lineWidth = 2;
+  for(let i = -3; i < 12; i++){
+    const x = i * 44;
+    c.beginPath(); c.moveTo(x, WALL_Y); c.lineTo(x - 70, SH); c.stroke();
+  }
+  [168, 194, 226].forEach(yy => {
+    c.strokeStyle = 'rgba(120,80,50,.10)';
+    c.beginPath(); c.moveTo(0, yy); c.lineTo(SW, yy); c.stroke();
+  });
+  c.strokeStyle = '#B98F68'; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(0, WALL_Y); c.lineTo(SW, WALL_Y); c.stroke();
+
+  // ---- дверь слева: через неё заходят гости
+  c.fillStyle = '#CF9E86'; c.fillRect(0, 0, 78, WALL_Y);
+  c.strokeStyle = 'rgba(255,255,255,.3)'; c.lineWidth = 2;
+  for(let row = 0; row * 15 < WALL_Y; row++){
+    const yy = row * 15;
+    c.beginPath(); c.moveTo(0, yy); c.lineTo(78, yy); c.stroke();
+    const off = row % 2 ? 0 : 16;
+    for(let bx = off; bx < 78; bx += 32){
+      c.beginPath(); c.moveTo(bx, yy); c.lineTo(bx, yy + 15); c.stroke();
     }
   }
-
-  // ---- дверь слева
   c.fillStyle = '#B9835A';
-  rr(c, DOOR_X - 30, 96, 60, FLOOR_Y - 96, 6); c.fill();
-  c.fillStyle = '#CFE8F0';                       // стекло
-  rr(c, DOOR_X - 22, 106, 44, 62, 4); c.fill();
+  rr(c, DOOR_X - 28, 34, 56, WALL_Y - 34, 5); c.fill();
+  c.fillStyle = '#CFE8F0';
+  rr(c, DOOR_X - 21, 42, 42, 58, 4); c.fill();
   c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 3;
-  c.beginPath(); c.moveTo(DOOR_X - 18, 160); c.lineTo(DOOR_X + 10, 112); c.stroke();
+  c.beginPath(); c.moveTo(DOOR_X - 17, 92); c.lineTo(DOOR_X + 10, 48); c.stroke();
   c.fillStyle = '#8A5A3B';
-  c.beginPath(); c.arc(DOOR_X + 20, 176, 3.5, 0, 6.283); c.fill();
-  // колокольчик над дверью — звенит, когда кто-то входит
-  const ring = guests.some(g => g.state === 'walk' && g.x < DOOR_X + 40);
+  c.beginPath(); c.arc(DOOR_X + 19, 108, 3.2, 0, 6.283); c.fill();
+  // колокольчик звенит, пока кто-то входит
+  const ring = guests.some(g => g.state === 'walk' && g.x < DOOR_X + 46);
   c.save();
-  c.translate(DOOR_X, 90);
+  c.translate(DOOR_X, 28);
   c.rotate(ring ? Math.sin(sceneT / 4) * .34 : 0);
   c.fillStyle = '#E0A867';
-  c.beginPath(); c.moveTo(-7, 0); c.quadraticCurveTo(0, -12, 7, 0); c.closePath(); c.fill();
-  c.beginPath(); c.arc(0, 2, 2.4, 0, 6.283); c.fill();
+  c.beginPath(); c.moveTo(-6, 0); c.quadraticCurveTo(0, -11, 6, 0); c.closePath(); c.fill();
+  c.beginPath(); c.arc(0, 2, 2.2, 0, 6.283); c.fill();
   c.restore();
-  c.fillStyle = '#8A7266'; c.font = '700 9px Nunito, sans-serif'; c.textAlign = 'center';
-  c.fillText('ВХОД', DOOR_X, 90 - 14);
 
   // ---- окно
   c.fillStyle = '#BFE3F2';
-  rr(c, 118, 54, 84, 66, 6); c.fill();
+  rr(c, 96, 26, 76, 60, 6); c.fill();
   c.fillStyle = '#A8D8E8';
-  c.beginPath(); c.arc(150, 96, 20, 0, 6.283); c.fill();   // куст за окном
-  c.strokeStyle = '#B9835A'; c.lineWidth = 5;
-  rr(c, 118, 54, 84, 66, 6); c.stroke();
-  c.lineWidth = 3;
-  c.beginPath(); c.moveTo(160, 54); c.lineTo(160, 120);
-  c.moveTo(118, 87); c.lineTo(202, 87); c.stroke();
+  c.beginPath(); c.arc(126, 66, 18, 0, 6.283); c.fill();
+  c.strokeStyle = '#B9835A'; c.lineWidth = 5; rr(c, 96, 26, 76, 60, 6); c.stroke();
+  c.lineWidth = 2.6;
+  c.beginPath(); c.moveTo(134, 26); c.lineTo(134, 86);
+  c.moveTo(96, 56); c.lineTo(172, 56); c.stroke();
 
-  // ---- вывеска
-  c.fillStyle = '#4A3229';
-  rr(c, 224, 34, 118, 32, 8); c.fill();
-  c.fillStyle = '#F8F0E7'; c.font = '800 15px Nunito, sans-serif'; c.textAlign = 'center';
-  c.fillText('COFFEE', 283, 55);
-
-  // ---- подвесные лампы: в кофейнях это главный источник уюта
-  [96, 200, 300, 386].forEach((lx, i) => {
-    c.strokeStyle = '#5A4A3E'; c.lineWidth = 1.6;
-    c.beginPath(); c.moveTo(lx, 0); c.lineTo(lx, 26 + (i % 2) * 10); c.stroke();
-    const ly = 26 + (i % 2) * 10;
-    c.fillStyle = '#3B2A22';
-    c.beginPath();
-    c.moveTo(lx - 13, ly + 12); c.lineTo(lx + 13, ly + 12);
-    c.lineTo(lx + 7, ly); c.lineTo(lx - 7, ly); c.closePath(); c.fill();
-    // тёплое пятно света
-    const grd = c.createRadialGradient(lx, ly + 14, 2, lx, ly + 14, 34);
-    grd.addColorStop(0, 'rgba(255,214,140,.5)');
-    grd.addColorStop(1, 'rgba(255,214,140,0)');
-    c.fillStyle = grd;
-    c.beginPath(); c.arc(lx, ly + 14, 34, 0, 6.283); c.fill();
-    c.fillStyle = '#FFE1A6';
-    c.beginPath(); c.arc(lx, ly + 13, 3.4, 0, 6.283); c.fill();
-  });
-
-  // ---- меловое меню на стене
-  c.fillStyle = '#2E2A26';
-  rr(c, 224, 76, 118, 44, 5); c.fill();
-  c.strokeStyle = '#8A5A3B'; c.lineWidth = 3; rr(c, 224, 76, 118, 44, 5); c.stroke();
-  c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 2;
-  [86, 96, 106].forEach((yy, i) => {
-    c.beginPath(); c.moveTo(234, yy); c.lineTo(234 + [64, 78, 52][i], yy); c.stroke();
+  // ---- меловое меню
+  c.fillStyle = '#2E2A26'; rr(c, 194, 22, 104, 60, 5); c.fill();
+  c.strokeStyle = '#8A5A3B'; c.lineWidth = 3; rr(c, 194, 22, 104, 60, 5); c.stroke();
+  c.fillStyle = '#F8F0E7'; c.font = '800 12px Nunito, sans-serif'; c.textAlign = 'center';
+  c.fillText('COFFEE', 246, 40);
+  c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 2;
+  [52, 62, 72].forEach((yy, i) => {
+    c.beginPath(); c.moveTo(204, yy); c.lineTo(204 + [58, 70, 44][i], yy); c.stroke();
   });
   c.strokeStyle = 'rgba(245,200,107,.75)';
-  c.beginPath(); c.moveTo(300, 86); c.lineTo(332, 86); c.stroke();
+  c.beginPath(); c.moveTo(268, 52); c.lineTo(290, 52); c.stroke();
 
   // ---- полка с чашками
-  c.fillStyle = '#B9835A'; c.fillRect(228, 132, 112, 7);
+  c.fillStyle = '#B9835A'; c.fillRect(316, 74, 96, 6);
   for(let i = 0; i < 4; i++){
-    const x = 240 + i * 26;
+    const x = 322 + i * 23;
     c.fillStyle = ['#FFFBF6','#FFE3E0','#E4F3EC','#FFF1D6'][i];
-    rr(c, x, 118, 16, 14, 3); c.fill();
-    c.strokeStyle = '#D8C6B4'; c.lineWidth = 1.6; rr(c, x, 118, 16, 14, 3); c.stroke();
+    rr(c, x, 62, 15, 12, 3); c.fill();
+    c.strokeStyle = '#D8C6B4'; c.lineWidth = 1.5; rr(c, x, 62, 15, 12, 3); c.stroke();
   }
+  c.fillStyle = '#B9835A'; c.fillRect(316, 108, 96, 6);
+  c.fillStyle = '#5A3620';
+  [322, 348, 374].forEach(x => { rr(c, x, 90, 20, 18, 3); c.fill(); });
 
-  // ---- растение в углу
-  c.fillStyle = '#C4784F';
-  rr(c, 366, 214, 34, 36, 5); c.fill();
+  // ---- подвесные лампы
+  [104, 196, 288, 372].forEach((lx, i) => {
+    const ly = 14 + (i % 2) * 8;
+    c.strokeStyle = '#5A4A3E'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(lx, 0); c.lineTo(lx, ly); c.stroke();
+    c.fillStyle = '#3B2A22';
+    c.beginPath();
+    c.moveTo(lx - 11, ly + 10); c.lineTo(lx + 11, ly + 10);
+    c.lineTo(lx + 6, ly); c.lineTo(lx - 6, ly); c.closePath(); c.fill();
+    const grd = c.createRadialGradient(lx, ly + 12, 2, lx, ly + 12, 40);
+    grd.addColorStop(0, 'rgba(255,214,140,.45)');
+    grd.addColorStop(1, 'rgba(255,214,140,0)');
+    c.fillStyle = grd;
+    c.beginPath(); c.arc(lx, ly + 12, 40, 0, 6.283); c.fill();
+    c.fillStyle = '#FFE1A6';
+    c.beginPath(); c.arc(lx, ly + 11, 3, 0, 6.283); c.fill();
+  });
+
+  // ---- растение у стены
+  c.fillStyle = '#C4784F'; rr(c, 384, 152, 26, 28, 4); c.fill();
   c.fillStyle = '#7BAE72';
-  [[-1,-1],[0,-1.25],[1,-1]].forEach(([dx,dy],i)=>{
-    c.save(); c.translate(383, 214);
-    c.rotate(dx * .5);
-    c.beginPath(); c.ellipse(0, dy * 26, 11, 26, 0, 0, 6.283); c.fill();
+  [-1, 0, 1].forEach(dx => {
+    c.save(); c.translate(397, 152); c.rotate(dx * .45);
+    c.beginPath(); c.ellipse(0, -20, 8, 20, 0, 0, 6.283); c.fill();
     c.restore();
   });
 
-  // ---- СТОЙКА справа
-  const bx = 252;
-  c.fillStyle = '#8A5A3B'; rr(c, bx, 194, SW - bx - 8, 96, 8); c.fill();
-  c.fillStyle = '#A6714A'; rr(c, bx, 194, SW - bx - 8, 16, 8); c.fill();   // столешница
-  // передняя панель
-  c.strokeStyle = 'rgba(0,0,0,.14)'; c.lineWidth = 2;
-  for(let i = 1; i < 4; i++){
-    c.beginPath(); c.moveTo(bx + i * 42, 214); c.lineTo(bx + i * 42, 286); c.stroke();
+  // ---- столики: сейчас только основание, столешница ляжет поверх сидящих
+  TABLES.forEach(drawTable);
+}
+
+/* Столик: круглая столешница, ножка и стул. Рисуется до людей —
+   сидящий гость должен оказаться за столом, а не под ним. */
+function drawTable(t){
+  const c = sctx, k = t.scale;
+  c.save(); c.translate(t.x, t.y); c.scale(k, k);
+  c.fillStyle = 'rgba(90,60,40,.15)';
+  c.beginPath(); c.ellipse(0, 16, 34, 9, 0, 0, 6.283); c.fill();
+  // дальний стул — на нём и сидят
+  c.fillStyle = '#96633E';
+  rr(c, -12, -46, 24, 34, 5); c.fill();
+  c.fillStyle = '#7A5236'; rr(c, -12, -18, 24, 6, 3); c.fill();
+  // ножка стола
+  c.fillStyle = '#7A5236'; c.fillRect(-5, -6, 10, 20);
+  c.fillStyle = '#5A3620'; rr(c, -17, 11, 34, 6, 3); c.fill();
+  c.restore();
+}
+
+/* Столешница и ближний стул — верхний слой: сидящий уходит за них по пояс. */
+function drawTableTop(t){
+  const c = sctx, k = t.scale;
+  c.save(); c.translate(t.x, t.y); c.scale(k, k);
+  c.fillStyle = '#8A5A3B';
+  c.beginPath(); c.ellipse(0, -3, 32, 11, 0, 0, 6.283); c.fill();
+  c.fillStyle = '#BC8558';
+  c.beginPath(); c.ellipse(0, -7, 32, 11, 0, 0, 6.283); c.fill();
+  c.strokeStyle = 'rgba(90,60,40,.22)'; c.lineWidth = 1.2;
+  c.beginPath(); c.ellipse(0, -7, 32, 11, 0, 0, 6.283); c.stroke();
+  // ближний стул — спинкой к нам, задаёт глубину
+  c.fillStyle = '#8A5A3B';
+  rr(c, -13, 0, 26, 10, 4); c.fill();
+  c.restore();
+  if(t.busy) drawTableCup(t);
+}
+
+/* Чашка на столе — у того, кому уже подали. */
+function drawTableCup(t){
+  const c = sctx, k = t.scale;
+  c.save(); c.translate(t.x + 12 * k, t.y - 8 * k); c.scale(k, k);
+  c.fillStyle = '#FFFBF6'; rr(c, -6, -9, 12, 10, 2.5); c.fill();
+  c.strokeStyle = '#D8C6B4'; c.lineWidth = 1.4; rr(c, -6, -9, 12, 10, 2.5); c.stroke();
+  c.fillStyle = '#6B4326';
+  c.beginPath(); c.ellipse(0, -8, 4.6, 1.8, 0, 0, 6.283); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1.4; c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(0, -12); c.quadraticCurveTo(3 + Math.sin(sceneT / 22) * 1.5, -17, 0, -22);
+  c.stroke();
+  c.restore();
+}
+
+/* Сидящий гость: голова, плечи, рука к чашке. Отдельно от ходячего —
+   у сидящего нет ног, зато есть стол, за который он частично уходит. */
+function drawSeated(g){
+  const t = TABLES[g.table];
+  if(!t) return;
+  const c = sctx, k = t.scale;
+  const sip = Math.sin(sceneT / 30 + g.id) > .82;   // изредка подносит чашку
+
+  c.save(); c.translate(t.x - 1 * k, t.y - 20 * k); c.scale(k, k);
+  // торс
+  c.fillStyle = g.cloth;
+  rr(c, -13, -14, 26, 24, 9); c.fill();
+  // рука к столу
+  c.strokeStyle = g.skin; c.lineWidth = 5; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(10, -6); c.lineTo(15, sip ? -14 : -4); c.stroke();
+  // голова
+  c.fillStyle = g.skin;
+  c.beginPath(); c.arc(0, -24, 11, 0, 6.283); c.fill();
+  // волосы
+  c.fillStyle = g.hair;
+  c.beginPath(); c.arc(0, -26, 11.4, Math.PI, 0); c.fill();
+  if(g.longHair){ rr(c, -12, -26, 5, 16, 2.5); c.fill(); rr(c, 7, -26, 5, 16, 2.5); c.fill(); }
+  // довольное лицо
+  c.fillStyle = '#3B2A22';
+  c.beginPath(); c.arc(-3.6, -24, 1.4, 0, 6.283); c.fill();
+  c.beginPath(); c.arc(3.6, -24, 1.4, 0, 6.283); c.fill();
+  c.strokeStyle = '#3B2A22'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(0, -21, 3.4, .2, Math.PI - .2); c.stroke();
+  c.restore();
+}
+
+/* Наш прилавок — ближний край кадра. Рисуется поверх людей:
+   так очередь оказывается по ту сторону стойки, а мы — за ней. */
+function drawBar(){
+  const c = sctx;
+  const g = c.createLinearGradient(0, BAR_Y, 0, SH);
+  g.addColorStop(0, '#A6714A'); g.addColorStop(.18, '#8A5A3B'); g.addColorStop(1, '#6B4326');
+  c.fillStyle = g; c.fillRect(0, BAR_Y, SW, SH - BAR_Y);
+  c.fillStyle = 'rgba(255,255,255,.16)'; c.fillRect(0, BAR_Y, SW, 4);
+  c.strokeStyle = 'rgba(0,0,0,.13)'; c.lineWidth = 2;
+  for(let x = 52; x < SW; x += 52){
+    c.beginPath(); c.moveTo(x, BAR_Y + 6); c.lineTo(x, SH); c.stroke();
   }
-  // кофемашина на стойке
-  c.fillStyle = '#49545C'; rr(c, bx + 16, 150, 62, 46, 6); c.fill();
-  c.fillStyle = '#5E6A73'; rr(c, bx + 24, 158, 46, 12, 3); c.fill();
-  c.fillStyle = '#C98A4B'; c.beginPath(); c.arc(bx + 34, 182, 5, 0, 6.283); c.fill();
-  c.fillStyle = '#7CC5B0'; c.beginPath(); c.arc(bx + 50, 182, 5, 0, 6.283); c.fill();
-  c.fillStyle = '#8E9AA3'; rr(c, bx + 60, 178, 8, 16, 2); c.fill();
-  // чашки на стойке
-  c.fillStyle = '#FFFBF6'; rr(c, bx + 92, 182, 15, 12, 3); c.fill();
-  c.fillStyle = '#6B4326'; c.beginPath(); c.ellipse(bx + 99.5, 183, 6, 2.2, 0, 0, 6.283); c.fill();
-  // табличка «КАССА»
-  c.fillStyle = '#4A3229'; rr(c, bx + 96, 204, 54, 18, 4); c.fill();
-  c.fillStyle = '#F8F0E7'; c.font = '800 9px Nunito, sans-serif'; c.textAlign = 'center';
-  c.fillText('КАССА', bx + 123, 217);
+  // мелочи на стойке: салфетки и сахар
+  c.fillStyle = '#F8F0E7'; rr(c, 14, BAR_Y - 9, 22, 11, 2); c.fill();
+  c.fillStyle = '#E4CBAA'; rr(c, 44, BAR_Y - 12, 14, 14, 3); c.fill();
 }
 
 /* ---------- персонаж ---------- */
@@ -1000,6 +1111,25 @@ function sceneStep(){
   leaving.forEach(g => { g.x -= OUT * dt; g.dir = -1; });
   leaving = leaving.filter(g => g.x > DOOR_X - 40);
 
+  // те, кому уже подали: идут к столику, пьют и только потом уходят
+  seated.forEach(g => {
+    const t = TABLES[g.table];
+    if(g.state === 'toTable'){
+      const tx = t ? t.x : DOOR_X;
+      g.dir = g.x < tx ? 1 : -1;
+      g.x += Math.sign(tx - g.x) * SLOW * dt;
+      if(Math.abs(g.x - tx) < 3){ g.x = tx; g.state = 'sit'; }
+    } else if(g.state === 'sit'){
+      g.sitT -= dt;
+      if(g.sitT <= 0){
+        g.state = 'leave';
+        if(t) t.busy = null;
+        leaving.push(g);
+      }
+    }
+  });
+  seated = seated.filter(g => g.state !== 'leave');
+
   guests.forEach((g, i) => {
     const slot = QUEUE_X[Math.min(i, QUEUE_X.length - 1)];
     if(g.state === 'walk'){
@@ -1019,58 +1149,81 @@ function sceneStep(){
 
   sctx.clearRect(0, 0, SW, SH);
   drawRoom();
+
+  // сидящие — в глубине зала, до тех, кто стоит у стойки
+  seated.forEach(g => { if(g.state === 'sit') drawSeated(g); else drawPerson(g); });
+  TABLES.forEach(drawTableTop);
+
   // рисуем задних первыми, чтобы передние перекрывали
   const sorted = guests.concat(leaving).sort((a, b) => a.x - b.x);
   sorted.forEach(drawPerson);
   sorted.forEach(g => { if(g.state === 'queue' || g.state === 'walk') drawBubble(g); });
 
-  if(!guests.length){
-    sctx.fillStyle = 'rgba(138,114,102,.9)';
-    sctx.font = '700 13px Nunito, sans-serif';
+  // стойка — последней: очередь стоит по ту сторону, мы за ней
+  drawBar();
+
+  if(!guests.length && !seated.length){
+    sctx.fillStyle = 'rgba(248,240,231,.92)';
+    sctx.font = '700 12px Nunito, sans-serif';
     sctx.textAlign = 'center';
-    sctx.fillText('Пока пусто — гости вот-вот зайдут', SW / 2, 296);
+    sctx.fillText('Пока пусто — гости вот-вот зайдут', SW / 2, SH - 8);
   }
 
   sceneRAF = requestAnimationFrame(sceneStep);
 }
 
-/* клик по гостю на сцене */
+/* клик по гостю на сцене: заказ принимается сразу, без промежуточной карточки —
+   лишний шаг «выбрал гостя → нажал Готовить» только замедлял игру */
 sceneCv.addEventListener('pointerdown', e => {
   const r = sceneCv.getBoundingClientRect();
   const x = (e.clientX - r.left) / sceneScale;
   const y = (e.clientY - r.top) / sceneScale;
-  // ищем ближайшего, попадание по фигуре и по пузырю
   let hit = null;
   guests.forEach(g => {
-    if(Math.abs(g.x - x) < 22 && y > FLOOR_Y - 110 && y < FLOOR_Y + 12) hit = g;
+    if(Math.abs(g.x - x) < 24 && y > FLOOR_Y - 116 && y < FLOOR_Y + 10) hit = g;
   });
+  if(!hit) return;
+  if(current && current.id === hit.id) return;
+  if(current && B && B.step !== 'grind'){
+    toast('Сначала закончите текущий заказ'); return;
+  }
+  const missing = hit.extras.filter(k => (S.stock[k] || 0) <= 0);
+  if(missing.length){
+    toast('Нет: ' + missing.map(k => EXTRAS[k].name).join(', ') + '. Выиграйте в мини-играх.');
+    go('games'); return;
+  }
   guests.forEach(g => g.sel = false);
-  if(hit){ hit.sel = true; }
-  renderPick(hit);
+  hit.sel = true;
+  current = hit;
+  resetBrew();
+  renderMachine();
+  document.getElementById('rig').scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
-/* карточка выбранного гостя под сценой */
+/* Чек текущего заказа — узкая полоска между залом и машиной.
+   Заменил карточку с кнопкой «Готовить»: гость выбирается тапом по нему в зале,
+   а здесь просто видно, что мы сейчас готовим. */
 let pickShownId = null;   // что уже нарисовано — чтобы не дёргать DOM зря
 
-function renderPick(g){
+function renderPick(){
   const box = document.getElementById('pickBox');
+  const g = current;
   // Таймер терпения зовёт перерисовку раз в секунду. Без этой проверки
-  // innerHTML переписывался бы каждый раз и анимация появления играла бы
-  // заново — карточка мерцала.
-  const id = g ? g.id : (guests.length ? 'hint' : 'empty');
+  // innerHTML переписывался бы каждый раз и анимация появления играла бы заново.
+  const id = g ? g.id : (guests.length ? 'wait' : 'empty');
   if(id === pickShownId) return;
   pickShownId = id;
+
   if(!g){
     box.innerHTML = guests.length
-      ? '<div class="hintLine">Нажмите на гостя, чтобы принять заказ</div>'
-      : '<div class="hintLine">Гости заходят через дверь. Пока никого — сходите за добавками в мини-игры.</div>';
+      ? '<div class="hintLine">Нажмите на гостя у стойки — и сразу за машину</div>'
+      : '<div class="hintLine">Гости заходят через дверь. Пока никого — сходите в мини-игры за добавками.</div>';
     return;
   }
   const d = DRINKS[g.drink];
-  const ex = g.extras.map(k => {
-    const have = (S.stock[k] || 0) > 0;
-    return `<span class="chip ${have ? 'have' : 'need'}"><img src="${ICON[EXTRAS[k].ic]}" alt="" width="13" height="13" style="vertical-align:-2px;margin-right:3px">${EXTRAS[k].name}${have ? '' : ' — нет'}</span>`;
-  }).join('') || '<span class="chip">без добавок</span>';
+  const ex = g.extras.map(k =>
+    `<span class="chip have"><img src="${ICON[EXTRAS[k].ic]}" alt="" width="13" height="13" style="vertical-align:-2px;margin-right:3px">${EXTRAS[k].name}</span>`
+  ).join('') || '<span class="chip">без добавок</span>';
 
   box.innerHTML = `<div class="pickCard">
       <div class="face">${g.face}</div>
@@ -1079,29 +1232,11 @@ function renderPick(g){
         <div class="ord"><img src="${ICON[d.ic]}" alt="" width="15" height="15" style="vertical-align:-3px;margin-right:4px">${d.name} · ${d.price} ₽</div>
         <div class="ex">${ex}</div>
       </div>
-      <button class="btn p" data-take="${g.id}" style="padding:12px 16px">Готовить</button>
     </div>`;
 }
-document.getElementById('pickBox').addEventListener('click', e => {
-  const b = e.target.closest('[data-take]');
-  if(!b) return;
-  const g = guests.find(x => x.id === +b.dataset.take);
-  if(!g) return;
-  const missing = g.extras.filter(k => (S.stock[k] || 0) <= 0);
-  if(missing.length){
-    toast('Нет: ' + missing.map(k => EXTRAS[k].name).join(', ') + '. Выиграйте в мини-играх.');
-    go('games'); return;
-  }
-  current = g;
-  resetBrew();
-  go('machine');
-});
 
 /* совместимость: старое имя вызывается из нескольких мест */
-function renderHall(){
-  const sel = guests.find(g => g.sel);
-  renderPick(sel || null);
-}
+function renderHall(){ renderPick(); }
 
 /* терпение тает */
 setInterval(() => {
@@ -1119,15 +1254,35 @@ setInterval(() => {
     gone.forEach(g => { g.state = 'leave'; leaving.push(g); });
     guests = guests.filter(g => g.patience > 0);
     gone.forEach(g => {
-      if(current && current.id === g.id){ current = null; }
+      // если ушёл тот, кого мы готовили, машину надо сбросить —
+      // иначе на экране остаётся чек несуществующего заказа
+      if(current && current.id === g.id){ current = null; resetBrew(); renderMachine(); }
       S.rep = Math.max(0, S.rep - 1);
     });
     toast(gone.length === 1 ? 'Гость ушёл не дождавшись 😔' : 'Гости ушли не дождавшись 😔');
     save();
   }
-  if(changed && tab === 'hall') renderHall();
+  if(changed) renderHall();
   hud();
 }, 1000);
+
+/* Пара завсегдатаев уже за столиками на старте смены: пустой зал
+   выглядит как нерабочая кофейня, а не как утро перед наплывом. */
+function seedRegulars(){
+  const R = a => a[Math.floor(Math.random()*a.length)];
+  [0, 2].forEach(ti => {
+    if(Math.random() < .35) return;
+    const g = {
+      id: ++guestSeq, name: R(NAMES), face: R(FACES),
+      skin: R(SKINS), cloth: R(CLOTHES), hair: R(HAIRS),
+      longHair: Math.random() < .45,
+      x: TABLES[ti].x, dir: 1, state: 'sit', table: ti,
+      sitT: 20 + Math.random() * 40, extras: [], patience: 100,
+    };
+    TABLES[ti].busy = g.id;
+    seated.push(g);
+  });
+}
 
 /* приход гостей */
 setInterval(() => { if(Math.random() < .5) spawnGuest(); }, 11000);
@@ -1186,11 +1341,14 @@ const TASK = {
 function renderMachine(){
   if(!current){
     el('steps').innerHTML = '';
-    el('taskLine').innerHTML = 'Выберите гостя в зале';
+    el('taskLine').innerHTML = '';
     el('tamperBox').setAttribute('opacity', '0');
     el('tamperBox').style.pointerEvents = 'none';
     el('stepBox').innerHTML =
-      '<div class="empty"><div class="big">👋</div>Сначала примите заказ в зале.</div>';
+      '<div class="empty"><div class="big">👋</div>Машина прогрета. Нажмите на гостя у стойки — заказ появится здесь.</div>';
+    el('doneCup').setAttribute('opacity', '0');
+    el('doneCup').style.pointerEvents = 'none';
+    el('pickupHint').textContent = '';
     return;
   }
   const need = DRINKS[current.drink].steam;
@@ -1213,6 +1371,13 @@ function renderMachine(){
   el('pf').style.opacity = 1;
   el('leverHint').textContent = B.step === 'brew' ? 'тяни вниз' : '';
   el('dockCap').innerHTML = B.step === 'lock' ? '<b>тащи вверх, в группу</b>' : 'Рожок';
+
+  // готовая чашка живёт только на этапе подачи
+  const serving = B.step === 'serve';
+  el('doneCup').setAttribute('opacity', serving ? '1' : '0');
+  el('doneCup').style.pointerEvents = serving ? 'auto' : 'none';
+  el('pickupHint').textContent = serving ? 'ставьте сюда' : '';
+  el('pickupGlow').setAttribute('opacity', '0');
 
   drawStep();
 }
@@ -1510,6 +1675,44 @@ el('flushBtn').addEventListener('click', () => {
 });
 
 /* Нижняя карточка: шкалы текущего шага и экран подачи. */
+/* ---------------- 6. ПОДАЧА: чашку ставим на стойку выдачи ----------------
+   Кнопки «Подать гостю» больше нет: готовый напиток берут пальцем
+   и переносят в зону выдачи, откуда гость забирает его сам. */
+(function(){
+  const cup = el('doneCup');
+  if(!cup) return;
+  let drag = false, sx = 0, sy = 0;
+  const down = e => {
+    if(!B || B.step !== 'serve') return;
+    e.preventDefault();
+    drag = true; sx = e.clientX; sy = e.clientY;
+    el('pickupGlow').setAttribute('opacity', '1');
+    cup.setPointerCapture && cup.setPointerCapture(e.pointerId);
+  };
+  const move = e => {
+    if(!drag) return;
+    const k = el('station').getBoundingClientRect().width / 900;
+    cup.setAttribute('transform', 'translate(' + (e.clientX - sx)/k + ',' + (e.clientY - sy)/k + ')');
+  };
+  const up = e => {
+    if(!drag) return;
+    drag = false;
+    const r = el('pickup').getBoundingClientRect();
+    const hit = e.clientX > r.left - 30 && e.clientX < r.right + 30 &&
+                e.clientY > r.top - 30 && e.clientY < r.bottom + 30;
+    cup.removeAttribute('transform');
+    el('pickupGlow').setAttribute('opacity', '0');
+    if(hit && current){
+      finish(evaluate());
+    } else {
+      toast('Поставьте чашку на стойку выдачи — справа');
+    }
+  };
+  cup.addEventListener('pointerdown', down);
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+})();
+
 function drawStep(){
   const box = el('stepBox');
 
@@ -1586,8 +1789,8 @@ function drawStep(){
         <p style="margin-top:10px;color:var(--ink);font-weight:800">
           +${r.pay} ₽${r.tip ? ' · чаевые +' + r.tip + ' ₽' : ''}</p>
       </div>
-      <button class="btn m block" id="serveBtn">Подать гостю</button>`;
-    el('serveBtn').addEventListener('click', () => finish(r));
+      <div class="hintLine" style="margin-top:10px">
+        Перетащите чашку на стойку выдачи справа — гость заберёт её сам</div>`;
     return;
   }
 }
@@ -1641,14 +1844,25 @@ function finish(r){
   S.money += r.pay + r.tip;
   S.served += 1;
   if(r.stars >= 4) S.rep += 1;
-  current.state = 'leave';
-  leaving.push(current);          // уходит довольный, а не растворяется
   guests = guests.filter(g => g.id !== current.id);
+  // Довольный гость садится за свободный столик и пьёт — зал живёт,
+  // а не пустеет сразу после каждой чашки.
+  const free = TABLES.findIndex(t => !t.busy);
+  if(free >= 0 && r.stars >= 2){
+    TABLES[free].busy = current.id;
+    current.table = free;
+    current.state = 'toTable';
+    current.sitT = 18 + Math.random() * 14;
+    seated.push(current);
+  } else {
+    current.state = 'leave';
+    leaving.push(current);        // уходит, а не растворяется
+  }
   current = null;
-  save(); hud(); renderPick(null);
+  save(); hud(); renderPick();
   toast(`+${r.pay + r.tip} ₽`);
   resetBrew();
-  go('hall');
+  renderMachine();
 }
 
 /* =========================================================================
@@ -2487,8 +2701,10 @@ hud(); renderShop(); renderGames();
 setGauge(0);
 document.getElementById('icMoney').src = ICON.money;
 document.getElementById('icStar').src = ICON.star;
+seedRegulars();
 if(sctx){ fitScene(); sceneStep(); }
-renderPick(null);
+renderPick();
+renderMachine();      // машина видна сразу: она больше не отдельный экран
 })();
 </script>
 </body>
