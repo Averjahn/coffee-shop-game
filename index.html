@@ -1726,25 +1726,29 @@ document.addEventListener('keydown', e => {
    ========================================================================= */
 const JOURNEY = [
   { id:'harvest', name:'Плантация',  em:'🌱',
-    task:'Собирайте только спелые — тёмно-красные. Зелёные ещё не готовы.',
-    hint:'Нажимайте на спелые ягоды · 25 секунд',
-    fact:'Кофе — не боб, а косточка ягоды. Её до сих пор во многих странах собирают вручную: на одном кусте ягоды спеют неравномерно.' },
+    task:'Срывайте ягоды спелыми — красными. Зелёным дайте дозреть, переспевшие опадают сами.',
+    hint:'Тапайте по красным · спелость у каждой своя',
+    fact:'Кофе — не боб, а косточка ягоды. На одном кусте ягоды спеют неравномерно, поэтому лучший кофе до сих пор собирают вручную, ягода за ягодой.' },
+  { id:'dry',     name:'Сушка',      em:'☀️',
+    task:'Ворошите зёрна свайпами, чтобы сохли ровно. Где потемнело — там отсырело, разгоняйте.',
+    hint:'Проводите пальцем по тёмным пятнам сырости',
+    fact:'После сбора зёрна сушат на солнце до четырёх недель и ворошат несколько раз в день. Стоит партии отсыреть в одном месте — плесень пойдёт по всей.' },
   { id:'sort',    name:'Сортировка', em:'🌰',
     task:'Уберите с ленты пережаренные и битые зёрна. Хорошие не трогайте.',
-    hint:'Нажимайте только на тёмные зёрна · 25 секунд',
-    fact:'Одно испорченное зерно на сотню способно испортить вкус всей партии. Поэтому спешелти-кофе перебирают вручную.' },
+    hint:'Нажимайте только на тёмные зёрна',
+    fact:'Одно испорченное зерно на сотню способно испортить вкус всей партии, поэтому спешелти-кофе перебирают вручную даже после машинной сортировки.' },
   { id:'roast',   name:'Обжарка',    em:'🔥',
-    task:'Грейте до первого щелчка и снимайте. Передержите — будет горечь.',
-    hint:'Держите палец · отпустите в зелёной зоне',
-    fact:'При обжарке зерно дважды щёлкает. После первого щелчка получается светлая обжарка с кислинкой, после второго — тёмная и горькая.' },
+    task:'Держите горелку под барабаном и следите за цветом. Доведите зёрна до образца — не светлее, не темнее.',
+    hint:'Палец = жар горелки · отпустить = высыпать',
+    fact:'При обжарке зерно дважды щёлкает. После первого щелчка — светлая обжарка с кислинкой, после второго — тёмная и горькая. Всё решают секунды.' },
   { id:'grind',   name:'Помол',      em:'⚙️',
-    task:'Поймайте нужную тонкость помола. Три попытки подряд.',
-    hint:'Нажмите, когда метка войдёт в зелёную зону',
-    fact:'Для эспрессо нужен помол как сахарная пудра, для френч-пресса — как морская соль. Одна и та же ошибка помола делает кофе кислым или горьким.' },
+    task:'Крутите ручку мельницы. С каждым оборотом помол тоньше — остановитесь на эспрессо, не сотрите в пыль.',
+    hint:'Крутите ручку по кругу · следите за помолом',
+    fact:'Первую ручную кофемолку с жерновами придумали в конце XVII века. Для эспрессо нужен помол как пудра, для френч-пресса — как соль; переусердствуешь — вкус горчит.' },
   { id:'art',     name:'Подача',     em:'🎨',
-    task:'Проведите пальцем по контуру — влейте молоко в рисунок.',
+    task:'Проведите пальцем по контуру — влейте молоко в рисунок на чашке.',
     hint:'Ведите палец по пунктиру, не отрывая',
-    fact:'Латте-арт — не только красота: ровный рисунок означает правильную микропену, а значит и вкус.' },
+    fact:'Латте-арт — не только красота: ровный рисунок означает правильную микропену, а значит и вкус. Кривой узор — первый признак, что молоко взбито плохо.' },
 ];
 
 /* награда за весь путь: чем чище прошли, тем больше добавок */
@@ -1861,25 +1865,28 @@ function finishJourney(){
   document.getElementById('jExit').addEventListener('click', () => { J = null; closeGame(); });
 }
 
-/* ---------- ЭТАП 1: ПЛАНТАЦИЯ ---------- */
+/* ---------- ЭТАП 1: ПЛАНТАЦИЯ ----------
+   Без таймера. У каждой ягоды свой цикл: зелёная → спелая → опавшая.
+   Снять надо именно спелой. Зелёная дозреет, спелая перезреет и упадёт.
+   Этап кончается, когда ветки пусты — все либо собраны, либо опали. */
 function harvestGame(){
   const W = 400, H = 300; fit(W, H);
   const k = () => VW / W;
   const self = {};
-  let berries = [], picked = 0, wrong = 0, t = 0;
-  const t0 = performance.now(), ROUND = 25;
-  let left = ROUND;
+  let berries = [], picked = 0, early = 0, missed = 0, spawned = 0, spawn = 0;
+  const TOTAL = 20;
 
-  // куст: ягоды висят гроздьями и постепенно доспевают
-  for(let i = 0; i < 26; i++){
+  function addBerry(){
     berries.push({
-      x: 30 + Math.random()*(W-60), y: 40 + Math.random()*(H-90),
-      r: 9 + Math.random()*3,
-      ripe: Math.random() < .55,
-      ripening: Math.random()*8,     // через сколько секунд дозреет
-      gone: false, pop: 0,
+      x: 26 + Math.random()*(W-52), y: 46 + Math.random()*(H-96),
+      r: 10, state: 'green',
+      t: 2.2 + Math.random()*2.4,
+      ripeWindow: 6.5 + Math.random()*2.2,
+      pop: 0, fall: 0,
     });
+    spawned++;
   }
+  for(let i = 0; i < 7; i++) addBerry();
 
   const tap = e => {
     e.preventDefault();
@@ -1888,10 +1895,10 @@ function harvestGame(){
     const y = ((e.touches?e.touches[0].clientY:e.clientY) - r.top)/k();
     for(let i = berries.length-1; i >= 0; i--){
       const b = berries[i];
-      if(b.gone) continue;
-      if(Math.hypot(b.x-x, b.y-y) < b.r + 6){
-        if(b.ripe){ picked++; b.gone = true; b.pop = 10; }
-        else { wrong++; b.pop = -8; }
+      if(b.state === 'gone' || b.state === 'fallen') continue;
+      if(Math.hypot(b.x-x, b.y-y) < b.r + 8){
+        if(b.state === 'ripe'){ picked++; b.state = 'gone'; b.pop = 10; }
+        else { early++; b.pop = -8; }
         return;
       }
     }
@@ -1899,17 +1906,29 @@ function harvestGame(){
   mgCanvas.addEventListener('pointerdown', tap);
   self.stop = () => mgCanvas.removeEventListener('pointerdown', tap);
 
+  let last = performance.now();
   self.step = function(){
-    t++;
-    left = Math.max(0, ROUND - (performance.now()-t0)/1000);
+    const now = performance.now(), dt = Math.min(.1, (now-last)/1000); last = now;
+    if(spawned < TOTAL){ spawn -= dt; if(spawn <= 0){ addBerry(); spawn = .9 + Math.random()*.9; } }
+
+    let live = 0;
     berries.forEach(b => {
-      if(!b.ripe && !b.gone){ b.ripening -= 1/60; if(b.ripening <= 0) b.ripe = true; }
       if(b.pop > 0) b.pop--; else if(b.pop < 0) b.pop++;
+      if(b.state === 'gone') return;
+      if(b.state === 'fallen'){ b.fall++; return; }
+      live++;
+      b.t -= dt;
+      if(b.t <= 0){
+        if(b.state === 'green'){ b.state = 'ripe'; b.t = b.ripeWindow; }
+        else { b.state = 'fallen'; missed++; }
+      }
     });
-    if(left <= 0){
-      const pts = Math.max(0, picked * 5 - wrong * 6);
+
+    if(spawned >= TOTAL && live === 0){
+      const pts = Math.max(0, Math.round(picked/TOTAL*100) - early*4);
       return stageDone(Math.min(100, pts),
-        `Собрано спелых: ${picked}` + (wrong ? `, сорвано зелёных: ${wrong}` : ', ни одной зелёной'));
+        `Собрано спелыми: ${picked} из ${TOTAL}` +
+        (early ? `, сорвано зелёных: ${early}` : '') + (missed ? `, опало: ${missed}` : ''));
     }
     draw();
   };
@@ -1918,37 +1937,42 @@ function harvestGame(){
     const s = k();
     ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
     ctx.fillStyle = '#EAF3E2'; ctx.fillRect(0,0,W,H);
-    // ветки
     ctx.strokeStyle = '#7A9E6B'; ctx.lineWidth = 5; ctx.lineCap = 'round';
     for(let i = 0; i < 4; i++){
       const y = 60 + i*62;
       ctx.beginPath(); ctx.moveTo(-10, y);
       ctx.quadraticCurveTo(W/2, y - 18 + (i%2)*36, W+10, y); ctx.stroke();
     }
-    // листья
     ctx.fillStyle = '#8FBE7C';
     for(let i = 0; i < 14; i++){
       const lx = (i*57 + 20) % W, ly = 50 + (i*43) % (H-80);
       ctx.save(); ctx.translate(lx, ly); ctx.rotate(i);
       ctx.beginPath(); ctx.ellipse(0,0,15,7,0,0,6.283); ctx.fill(); ctx.restore();
     }
-    // ягоды
     berries.forEach(b => {
-      if(b.gone) return;
+      if(b.state === 'gone') return;
+      let cy = b.y;
+      if(b.state === 'fallen') cy = b.y + Math.min(H+30, b.fall*3);
       const rr = b.r + (b.pop>0 ? b.pop*.4 : 0) + (b.pop<0 ? b.pop*.3 : 0);
-      ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, 6.283);
-      ctx.fillStyle = b.ripe ? '#C62F2F' : '#8CC152';
-      ctx.fill();
-      ctx.strokeStyle = b.ripe ? '#8E1E1E' : '#6B9C3A'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.beginPath(); ctx.arc(b.x - rr*.3, b.y - rr*.3, rr*.28, 0, 6.283);
-      ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fill();
+      let fill, stroke;
+      if(b.state === 'green'){ fill = '#8CC152'; stroke = '#6B9C3A'; }
+      else if(b.state === 'ripe'){
+        const urg = 1 - Math.max(0, Math.min(1, b.t / b.ripeWindow));
+        fill = urg > .6 ? '#8E1E1E' : '#C62F2F'; stroke = '#7A1515';
+      } else { fill = '#5A2020'; stroke = '#3A1010'; }
+      ctx.beginPath(); ctx.arc(b.x, cy, rr, 0, 6.283);
+      ctx.fillStyle = fill; ctx.fill();
+      ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke();
+      if(b.state === 'ripe'){
+        ctx.beginPath(); ctx.arc(b.x, cy, rr + 3 + Math.sin(performance.now()/180)*1.5, 0, 6.283);
+        ctx.strokeStyle = 'rgba(255,210,90,.6)'; ctx.lineWidth = 2; ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(b.x - rr*.3, cy - rr*.3, rr*.28, 0, 6.283);
+      ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fill();
     });
     ctx.fillStyle = '#5B6B52'; ctx.font = '700 13px Nunito, sans-serif';
-    ctx.textAlign = 'left'; ctx.fillText('Спелых: ' + picked, 12, 22);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = left <= 6 ? '#C62F2F' : '#5B6B52';
-    ctx.fillText(left.toFixed(0) + ' с', W-12, 22);
-    document.getElementById('mgScore').textContent = J.score + '+' + picked*5;
+    ctx.textAlign = 'left'; ctx.fillText('Собрано: ' + picked, 12, 22);
+    document.getElementById('mgScore').textContent = J.score + '+' + Math.round(picked/TOTAL*100);
   }
   return self;
 }
@@ -2027,25 +2051,29 @@ function sortGame(){
   return self;
 }
 
-/* ---------- ЭТАП 3: ОБЖАРКА ---------- */
+/* ---------- ЭТАП 3: ОБЖАРКА ----------
+   Горелка ходит под барабаном: держишь палец — пламя жарче, зёрна темнеют.
+   Слева образец нужного цвета; свою партию надо довести до него и снять.
+   Баланс — как с плавным нагревом: перегрел — уголь, недогрел — трава. */
 function roastGame(){
-  const W = 400, H = 280; fit(W, H);
+  const W = 400, H = 300; fit(W, H);
   const k = () => VW / W;
   const self = {};
-  let temp = 20, holding = false, done = false, t = 0, crack = 0;
-  const TARGET_LO = 196, TARGET_HI = 216, MAX = 250;   // окно первого щелчка
+  let color = 0;          // 0 сырое … 1 угли
+  const TARGET = 0.62, TOL = 0.07;   // нужный цвет и допуск
+  let flame = 0, holding = false, done = false, t = 0;
   let last = performance.now();
 
-  const down = e => { e.preventDefault(); holding = true; };
+  const down = e => { e.preventDefault(); if(!done) holding = true; };
   const up = () => {
-    if(!holding || done) return;
-    holding = false; done = true;
-    const inZone = temp >= TARGET_LO && temp <= TARGET_HI;
-    const dist = inZone ? 0 : Math.min(Math.abs(temp-TARGET_LO), Math.abs(temp-TARGET_HI));
-    const pts = Math.max(0, 100 - dist * 3.2);
-    const note = temp < TARGET_LO ? `Сняли рано, ${temp|0} °C — зерно осталось травянистым`
-               : temp > TARGET_HI ? `Передержали до ${temp|0} °C — горечь и дым`
-               : `Ровно на первом щелчке, ${temp|0} °C`;
+    if(done) return;
+    // отпустить = высыпать зёрна и зафиксировать результат
+    done = true; holding = false;
+    const d = Math.abs(color - TARGET);
+    const pts = Math.max(0, Math.round(100 - Math.max(0, d - TOL) * 480));
+    const note = color < TARGET - TOL ? 'Сняли рано — зерно светлое, во вкусе трава и кислота'
+               : color > TARGET + TOL ? 'Передержали — тёмный уголь, сплошная горечь'
+               : 'Ровно до образца — карамельная корочка, сбалансированный вкус';
     stageDone(pts, note);
   };
   mgCanvas.addEventListener('pointerdown', down);
@@ -2056,118 +2084,221 @@ function roastGame(){
   self.step = function(){
     t++;
     const now = performance.now(), dt = Math.min(.1, (now-last)/1000); last = now;
-    if(holding && !done){
-      temp += 42 * dt;
-      if(temp >= TARGET_LO && crack === 0) crack = 26;      // первый щелчок
-      if(temp >= MAX){ holding = false; done = true;
-        return stageDone(0, 'Зерно сгорело — партия в мусор'); }
+    if(!done){
+      // пламя плавно растёт при удержании и опадает при отпускании
+      flame += ((holding ? 1 : 0) - flame) * Math.min(1, dt*6);
+      color = Math.min(1, color + flame * 0.11 * dt);
+      if(color >= 1){ done = true; return stageDone(0, 'Зёрна сгорели дотла — партия в мусор'); }
     }
-    if(crack > 0) crack--;
+    draw();
+  };
+
+  function beanColor(c){
+    // от бледно-зелёного через коричневый к чёрному
+    if(c < .18){ const u=c/.18; return `rgb(${170-u*30},${175-u*40},${120-u*40})`; }
+    const u = (c-.18)/.82;
+    const r = Math.round(150 - u*135), g = Math.round(110 - u*95), b = Math.round(70 - u*60);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function draw(){
+    const s = k();
+    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
+    ctx.fillStyle = '#241C17'; ctx.fillRect(0,0,W,H);
+
+    // образец цели слева
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = '700 11px Nunito, sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText('НУЖНО', 46, 40);
+    ctx.beginPath(); ctx.arc(46, 78, 26, 0, 6.283);
+    ctx.fillStyle = beanColor(TARGET); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2; ctx.stroke();
+
+    // барабан ростера
+    ctx.save(); ctx.translate(W/2+30, 120);
+    ctx.fillStyle = '#3A2E27';
+    ctx.beginPath(); ctx.arc(0,0,76,0,6.283); ctx.fill();
+    ctx.strokeStyle = '#6E574A'; ctx.lineWidth = 7; ctx.stroke();
+    // сетчатая дверца
+    ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.lineWidth = 1.5;
+    for(let i=-3;i<=3;i++){ ctx.beginPath(); ctx.moveTo(i*16,-70); ctx.lineTo(i*16,70); ctx.stroke(); }
+    // зёрна крутятся и темнеют вместе с color
+    for(let i = 0; i < 11; i++){
+      const a = t*0.03 + i*0.57, rr = 22 + (i%3)*17;
+      ctx.save(); ctx.translate(Math.cos(a)*rr, Math.sin(a)*rr*0.85); ctx.rotate(a);
+      ctx.fillStyle = beanColor(color);
+      ctx.beginPath(); ctx.ellipse(0,0,11,7,0,0,6.283); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-8,0); ctx.quadraticCurveTo(0,3,8,0); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+
+    // горелка снизу
+    const fx = W/2+30, fy = 226;
+    ctx.fillStyle = '#555'; ctx.fillRect(fx-30, fy+18, 60, 8);
+    // язык пламени зависит от flame
+    const fh = 12 + flame*40;
+    const grd = ctx.createLinearGradient(fx, fy+18, fx, fy+18-fh);
+    grd.addColorStop(0, '#F5A623'); grd.addColorStop(.6, '#F5C86B'); grd.addColorStop(1, 'rgba(245,200,107,0)');
+    ctx.fillStyle = grd;
+    for(let i=-2;i<=2;i++){
+      const jitter = Math.sin(t*0.4+i)*3;
+      ctx.beginPath();
+      ctx.moveTo(fx+i*9-5, fy+18);
+      ctx.quadraticCurveTo(fx+i*9+jitter, fy+18-fh, fx+i*9+5, fy+18);
+      ctx.fill();
+    }
+    // синяя сердцевина
+    if(flame > .05){
+      ctx.fillStyle = 'rgba(120,180,255,'+(flame*.5)+')';
+      ctx.beginPath(); ctx.ellipse(fx, fy+14, 10, fh*0.3, 0, 0, 6.283); ctx.fill();
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = '700 12px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(done ? '' : (holding ? 'держите — жарче' : 'отпустите — высыпать'), fx, 268);
+    document.getElementById('mgScore').textContent = J.score;
+  }
+  return self;
+}
+
+/* ---------- ЭТАП 4: ПОМОЛ ----------
+   Ручная мельница с жерновами (как их придумали в XVII веке): крутишь
+   ручку по кругу, зёрна проваливаются между жерновов и дробятся всё мельче.
+   Индикатор помола растёт от крупного к пыли — остановиться надо в зоне
+   эспрессо. Перекрутишь — сотрёшь в пыль, вкус горчит. */
+function grindGame(){
+  const W = 400, H = 300; fit(W, H);
+  const k = () => VW / W;
+  const self = {};
+  const TARGET = 0.66, TOL = 0.06;       // зона эспрессо на шкале помола
+  let fine = 0;                          // 0 крупно … 1 пыль
+  let angle = 0, a0 = null, done = false, t = 0;
+  let particles = [];                    // дроблёный кофе, оседает в приёмник
+  for(let i = 0; i < 40; i++)
+    particles.push({ x: 150+Math.random()*100, y: 235+Math.random()*40, s: 3, settled: false });
+
+  // центр ручки в координатах холста
+  const handleCenter = () => {
+    const r = mgCanvas.getBoundingClientRect();
+    return { x: r.left + 150*k(), y: r.top + 90*k() };
+  };
+
+  const down = e => {
+    if(done) return;
+    e.preventDefault();
+    const c = handleCenter();
+    a0 = Math.atan2((e.touches?e.touches[0].clientY:e.clientY) - c.y,
+                    (e.touches?e.touches[0].clientX:e.clientX) - c.x);
+  };
+  const move = e => {
+    if(a0 === null || done) return;
+    e.preventDefault();
+    const c = handleCenter();
+    const a = Math.atan2((e.touches?e.touches[0].clientY:e.clientY) - c.y,
+                         (e.touches?e.touches[0].clientX:e.clientX) - c.x);
+    let d = a - a0; a0 = a;
+    if(d > Math.PI) d -= 2*Math.PI;
+    if(d < -Math.PI) d += 2*Math.PI;
+    angle += d;
+    fine = Math.min(1, fine + Math.abs(d) * 0.052);      // мельче с каждым оборотом
+    // сыплем частицы всё мельче
+    if(Math.abs(d) > 0.1){
+      const settled = particles.filter(p=>p.settled).length;
+      if(settled < 120){
+        particles.push({ x: 130+Math.random()*140, y: 232, vy: 0,
+          s: Math.max(1.1, 3.4 - fine*2.4), settled: false });
+      }
+    }
+    if(fine >= 1){ done = true; endGrind(); }
+  };
+  const up = () => { a0 = null; };
+  mgCanvas.addEventListener('pointerdown', down);
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+  self.stop = () => { mgCanvas.removeEventListener('pointerdown', down);
+    removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+
+  // если игрок прекратил крутить, а помол в зоне — засчитываем через паузу
+  let idle = 0;
+  function maybeFinish(dt){
+    if(done) return;
+    if(a0 === null){ idle += dt; } else idle = 0;
+    if(idle > 0.9 && fine > 0.12){ done = true; endGrind(); }
+  }
+  function endGrind(){
+    const d = Math.abs(fine - TARGET);
+    const pts = Math.max(0, Math.round(100 - Math.max(0, d - TOL) * 430));
+    const note = fine < TARGET - TOL ? 'Помол крупноват — вода проскочит, кофе водянистый'
+               : fine > TARGET + TOL ? 'Смолото в пыль — забьётся и станет горьким'
+               : 'Помол как надо — тонкий, для эспрессо';
+    stageDone(pts, note);
+  }
+
+  let last = performance.now();
+  self.step = function(){
+    t++;
+    const now = performance.now(), dt = Math.min(.1, (now-last)/1000); last = now;
+    maybeFinish(dt);
+    particles.forEach(p => {
+      if(p.settled) return;
+      p.vy = (p.vy||0) + 40*dt; p.y += p.vy*dt;
+      if(p.y > 250){ p.y = 250 - Math.random()*10; p.settled = true; }
+    });
     draw();
   };
 
   function draw(){
     const s = k();
     ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
-    const heat = Math.min(1, Math.max(0, (temp-20)/230));
-    ctx.fillStyle = '#2B211B'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#F3E8D8'; ctx.fillRect(0,0,W,H);
 
-    // барабан ростера
-    ctx.save(); ctx.translate(W/2, 120);
-    ctx.fillStyle = '#4A3A31';
-    ctx.beginPath(); ctx.arc(0,0,72,0,6.283); ctx.fill();
-    ctx.strokeStyle = '#6E574A'; ctx.lineWidth = 6; ctx.stroke();
-    // зёрна внутри крутятся и темнеют
-    for(let i = 0; i < 9; i++){
-      const a = t*0.035 + i*0.7, rr = 20 + (i%3)*16;
-      ctx.save(); ctx.translate(Math.cos(a)*rr, Math.sin(a)*rr); ctx.rotate(a);
-      const c = Math.round(150 - heat*110);
-      ctx.fillStyle = `rgb(${c+40},${c},${Math.round(c*0.7)})`;
-      ctx.beginPath(); ctx.ellipse(0,0,11,7,0,0,6.283); ctx.fill();
-      ctx.restore();
-    }
+    // корпус мельницы
+    ctx.fillStyle = '#8A5A3B';
+    ctx.beginPath();
+    ctx.moveTo(110,120); ctx.lineTo(190,120); ctx.lineTo(182,235); ctx.lineTo(118,235); ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(118,150,64,4);
+    // приёмник с молотым кофе
+    ctx.fillStyle = '#6E4425'; ctx.fillRect(112,232,76,50);
+    // осевший помол — цвет темнеет с тонкостью
+    particles.forEach(p => {
+      if(!p.settled) return;
+      ctx.fillStyle = fine > .5 ? '#3E2A1E' : '#5A3A25';
+      ctx.fillRect(p.x, p.y, p.s, p.s);
+    });
+    // падающие частицы
+    particles.forEach(p => { if(p.settled) return;
+      ctx.fillStyle = '#4A3229'; ctx.fillRect(p.x, p.y, p.s, p.s); });
+
+    // ось и ручка сверху
+    ctx.strokeStyle = '#5A4A3E'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(150,120); ctx.lineTo(150,90); ctx.stroke();
+    ctx.save(); ctx.translate(150,90); ctx.rotate(angle);
+    ctx.strokeStyle = 'url(#none)';
+    ctx.fillStyle = '#B98455';
+    ctx.fillRect(-4,-2,44,8);           // рычаг ручки
+    ctx.beginPath(); ctx.arc(42,2,9,0,6.283);
+    ctx.fillStyle = '#3B2A22'; ctx.fill();   // набалдашник
     ctx.restore();
+    ctx.beginPath(); ctx.arc(150,90,7,0,6.283); ctx.fillStyle='#8D99A3'; ctx.fill();
 
-    // щелчок
-    if(crack > 0){
-      ctx.fillStyle = `rgba(245,200,107,${crack/26})`;
-      ctx.font = '800 18px Nunito, sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('ЩЁЛК!', W/2, 100);
-    }
-
-    // шкала температуры
-    const bx = 40, by = 220, bw = W-80;
-    ctx.fillStyle = '#3E332C'; ctx.beginPath();
-    ctx.roundRect ? ctx.roundRect(bx,by,bw,20,10) : ctx.rect(bx,by,bw,20); ctx.fill();
-    ctx.fillStyle = 'rgba(92,184,127,.5)';
-    ctx.fillRect(bx + bw*(TARGET_LO-20)/230, by, bw*(TARGET_HI-TARGET_LO)/230, 20);
-    ctx.fillStyle = heat > .78 ? '#E27373' : '#F5C86B';
-    ctx.fillRect(bx, by, bw*Math.min(1,(temp-20)/230), 20);
-    ctx.fillStyle = '#FBF3E8'; ctx.font = '800 13px Nunito, sans-serif';
-    ctx.textAlign = 'center'; ctx.fillText((temp|0) + ' °C', W/2, by+15);
-    ctx.fillStyle = 'rgba(251,243,232,.7)'; ctx.font = '700 12px Nunito, sans-serif';
-    ctx.fillText(done ? '' : (holding ? 'отпустите на щелчке' : 'держите палец'), W/2, 262);
-    document.getElementById('mgScore').textContent = J.score;
-  }
-  return self;
-}
-
-/* ---------- ЭТАП 4: ПОМОЛ ---------- */
-function grindGame(){
-  const W = 400, H = 260; fit(W, H);
-  const k = () => VW / W;
-  const self = {};
-  let pos = 0, dir = 1, speed = 1.7, round = 0, hits = 0, done = false;
-  const TARGET = { c: 0, w: 0 };
-  newRound();
-  function newRound(){
-    TARGET.w = Math.max(11, 22 - round*3);
-    TARGET.c = 25 + Math.random()*50;
-    speed = 1.6 + round*.4; pos = 0; dir = 1;
-  }
-  const tap = e => {
-    e.preventDefault();
-    if(done) return;
-    if(Math.abs(pos - TARGET.c) <= TARGET.w/2) hits++;
-    round++;
-    if(round >= 3){
-      done = true;
-      return stageDone(Math.round(hits/3*100),
-        hits === 3 ? 'Помол идеально ровный' : hits ? `Точных настроек: ${hits} из 3` : 'Помол гуляет — вкус будет нестабильным');
-    }
-    newRound();
-  };
-  mgCanvas.addEventListener('pointerdown', tap);
-  self.stop = () => mgCanvas.removeEventListener('pointerdown', tap);
-
-  self.step = function(){
-    if(!done){ pos += dir*speed; if(pos>=100){pos=100;dir=-1;} if(pos<=0){pos=0;dir=1;} }
-    const s = k();
-    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
-    ctx.fillStyle = '#FBF3E8'; ctx.fillRect(0,0,W,H);
-    // жернова
-    ctx.save(); ctx.translate(W/2, 100);
-    ctx.fillStyle = '#8D99A3'; ctx.beginPath(); ctx.arc(0,0,58,0,6.283); ctx.fill();
-    ctx.strokeStyle = '#6E7B85'; ctx.lineWidth = 4;
-    for(let i=0;i<10;i++){
-      const a = i*0.628 + (done?0:pos*0.05);
-      ctx.beginPath(); ctx.moveTo(Math.cos(a)*20, Math.sin(a)*20);
-      ctx.lineTo(Math.cos(a)*54, Math.sin(a)*54); ctx.stroke();
-    }
-    ctx.fillStyle = '#4A3229'; ctx.beginPath(); ctx.arc(0,0,17,0,6.283); ctx.fill();
-    ctx.restore();
-    // шкала
-    const bx = 40, by = 195, bw = W-80;
-    ctx.fillStyle = '#EADCCB'; ctx.fillRect(bx,by,bw,22);
+    // шкала помола справа
+    const bx = 300, by = 60, bh = 180, bw = 26;
+    ctx.fillStyle = '#E4D3C2'; ctx.fillRect(bx,by,bw,bh);
+    // зона эспрессо
     ctx.fillStyle = 'rgba(124,197,176,.6)';
-    ctx.fillRect(bx + bw*(TARGET.c-TARGET.w/2)/100, by, bw*TARGET.w/100, 22);
-    ctx.fillStyle = '#C98A4B';
-    ctx.fillRect(bx + bw*pos/100 - 3, by-5, 6, 32);
-    ctx.fillStyle = '#8A7266'; ctx.font = '700 13px Nunito, sans-serif';
-    ctx.textAlign='left'; ctx.fillText(`Настройка ${Math.min(round+1,3)} из 3`, 12, 24);
-    ctx.textAlign='right'; ctx.fillText('точно: ' + hits, W-12, 24);
+    ctx.fillRect(bx, by + bh*(TARGET-TOL), bw, bh*TOL*2);
+    // текущий помол
+    ctx.fillStyle = fine > TARGET+TOL ? '#E27373' : '#C98A4B';
+    ctx.fillRect(bx-4, by + bh*fine - 3, bw+8, 6);
+    ctx.fillStyle = '#8A7266'; ctx.font = '700 10px Nunito, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('крупно', bx+bw+6, by+8);
+    ctx.fillText('пыль', bx+bw+6, by+bh);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#5A3A25'; ctx.font = '700 12px Nunito, sans-serif';
+    ctx.fillText(done ? '' : 'крутите ручку', 150, 40);
     document.getElementById('mgScore').textContent = J.score;
-  };
+  }
   return self;
 }
 
@@ -2250,8 +2381,104 @@ function artGame(){
   return self;
 }
 
-const BUILD = { harvest: harvestGame, sort: sortGame, roast: roastGame,
-                grind: grindGame, art: artGame };
+/* ---------- ЭТАП 2: СУШКА ----------
+   Зёрна на подносе сохнут. Где палец давно не проходил — там сырость,
+   пятно темнеет и растёт. Ворошить свайпом: провёл — сырость ушла.
+   Проиграл не по таймеру: этап длится 22 секунды, важно не дать плесени
+   разрастись. Итог — доля сухой поверхности к концу. */
+function dryGame(){
+  const W = 400, H = 300; fit(W, H);
+  const k = () => VW / W;
+  const self = {};
+  const COLS = 10, ROWS = 7;
+  const cw = W/COLS, ch = (H-40)/ROWS;
+  // каждая клетка: 0 сухо … 1 плесень
+  const grid = [];
+  for(let r = 0; r < ROWS; r++){ grid.push([]); for(let c = 0; c < COLS; c++) grid[r].push(Math.random()*0.15); }
+  let t0 = performance.now(), last = t0, done = false;
+  const ROUND = 22;
+  let trail = [];
+
+  const at = e => {
+    const r = mgCanvas.getBoundingClientRect();
+    return { x: ((e.touches?e.touches[0].clientX:e.clientX)-r.left)/k(),
+             y: ((e.touches?e.touches[0].clientY:e.clientY)-r.top)/k() };
+  };
+  let drawing = false;
+  const down = e => { e.preventDefault(); drawing = true; trail = []; stir(at(e)); };
+  const move = e => { if(!drawing) return; e.preventDefault(); const p = at(e); trail.push(p); stir(p); };
+  const up = () => { drawing = false; };
+  function stir(p){
+    const c = Math.floor(p.x/cw), r = Math.floor((p.y-40)/ch);
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+      const rr=r+dr, cc=c+dc;
+      if(rr>=0&&rr<ROWS&&cc>=0&&cc<COLS) grid[rr][cc] = Math.max(0, grid[rr][cc]-0.5);
+    }
+  }
+  mgCanvas.addEventListener('pointerdown', down);
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', up);
+  self.stop = () => { mgCanvas.removeEventListener('pointerdown', down);
+    removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+
+  self.step = function(){
+    const now = performance.now(), dt = Math.min(.1,(now-last)/1000); last = now;
+    const left = Math.max(0, ROUND - (now-t0)/1000);
+    // сырость медленно ползёт вверх и заражает соседей
+    for(let r = 0; r < ROWS; r++) for(let c = 0; c < COLS; c++){
+      grid[r][c] = Math.min(1, grid[r][c] + dt*0.045);
+      if(grid[r][c] > 0.6){
+        const ns = [[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+        ns.forEach(([rr,cc])=>{ if(rr>=0&&rr<ROWS&&cc>=0&&cc<COLS) grid[rr][cc]=Math.min(1,grid[rr][cc]+dt*0.06); });
+      }
+    }
+    if(left <= 0 && !done){
+      done = true;
+      let dry = 0, tot = ROWS*COLS;
+      for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(grid[r][c] < 0.4) dry++;
+      const pts = Math.round(dry/tot*100);
+      return stageDone(pts, pts >= 80 ? 'Партия просохла ровно, без плесени'
+        : pts >= 50 ? 'Кое-где отсырело, но основное спасли'
+        : 'Плесень пошла по подносу — половина партии в брак');
+    }
+    draw();
+  };
+
+  function draw(){
+    const s = k();
+    ctx.setTransform(DPR*s,0,0,DPR*s,0,0);
+    ctx.fillStyle = '#C9A876'; ctx.fillRect(0,0,W,H);          // деревянный поднос
+    ctx.fillStyle = '#B8935F'; ctx.fillRect(0,0,W,40);
+    ctx.fillStyle = '#5B4A38'; ctx.font = '700 13px Nunito, sans-serif';
+    ctx.textAlign = 'left'; ctx.fillText('Ворошите зёрна', 12, 26);
+    const left = Math.max(0, 22 - (performance.now()-t0)/1000);
+    ctx.textAlign = 'right'; ctx.fillStyle = left<=5?'#C62F2F':'#5B4A38';
+    ctx.fillText(left.toFixed(0)+' с', W-12, 26);
+    // клетки зёрен
+    for(let r = 0; r < ROWS; r++) for(let c = 0; c < COLS; c++){
+      const v = grid[r][c], x = c*cw, y = 40 + r*ch;
+      // много мелких зёрнышек, темнеют от сырости
+      for(let i = 0; i < 4; i++){
+        const bx = x + 4 + (i%2)*cw*0.45 + Math.sin(r+c+i)*3;
+        const by = y + 4 + Math.floor(i/2)*ch*0.45;
+        const dark = Math.round(150 - v*110);
+        ctx.fillStyle = v > .6 ? `rgb(${90-v*40},${110-v*30},${70-v*30})`  // плесневый зеленоватый
+                               : `rgb(${dark+40},${dark},${Math.round(dark*0.7)})`;
+        ctx.beginPath(); ctx.ellipse(bx, by, 5, 3.4, 0.5, 0, 6.283); ctx.fill();
+      }
+      // пятно сырости
+      if(v > .35){
+        ctx.fillStyle = `rgba(60,50,30,${(v-.35)*0.5})`;
+        ctx.fillRect(x, y, cw, ch);
+      }
+    }
+    document.getElementById('mgScore').textContent = J.score;
+  }
+  return self;
+}
+
+const BUILD = { harvest: harvestGame, dry: dryGame, sort: sortGame,
+                roast: roastGame, grind: grindGame, art: artGame };
 
 /* =========================================================================
    СТАРТ
