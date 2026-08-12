@@ -512,7 +512,7 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
 
           <!-- ================= РОЖОК (перетаскиваемый) ================= -->
           <g id="pf" style="cursor:grab">
-            <g transform="translate(60,406)">
+            <g transform="translate(200,406)">
               <ellipse cx="60" cy="14" rx="48" ry="10" fill="#EFEAE0"
                        stroke="#5C3B28" stroke-width="4.5"/>
               <path d="M14 14 a46 10 0 0 0 92 0 l-9 36 a15 12 0 0 1 -15 10 h-44 a15 12 0 0 1 -15 -10 z"
@@ -531,19 +531,19 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
                     stroke="#5C3B28" stroke-width="4.5"/>
             </g>
           </g>
-          <text x="180" y="516" text-anchor="middle" class="svgCap" id="dockCap">РОЖОК</text>
+          <text x="290" y="516" text-anchor="middle" class="svgCap" id="dockCap">РОЖОК</text>
 
           <!-- ================= ТЕМПЕР ================= -->
           <g id="tamperBox" opacity="0" style="pointer-events:none">
-            <g id="tamper" style="cursor:grab" transform="translate(300,406)">
-              <path d="M22 0 h34 a10 10 0 0 1 10 10 v28 a12 12 0 0 1 -12 12 h-30 a12 12 0 0 1 -12 -12 v-28 a10 10 0 0 1 10 -10 z"
+            <g id="tamper" style="cursor:grab">
+              <path d="M243 306 h34 a10 10 0 0 1 10 10 v28 a12 12 0 0 1 -12 12 h-30 a12 12 0 0 1 -12 -12 v-28 a10 10 0 0 1 10 -10 z"
                     fill="url(#wood)" stroke="#5C3B28" stroke-width="4.5"/>
-              <rect x="10" y="50" width="58" height="10" rx="5" fill="#DCD5C7"
+              <rect x="231" y="356" width="58" height="10" rx="5" fill="#DCD5C7"
                     stroke="#5C3B28" stroke-width="4"/>
-              <rect x="2" y="60" width="74" height="18" rx="6" fill="url(#chrome)"
+              <rect x="223" y="366" width="74" height="18" rx="6" fill="url(#chrome)"
                     stroke="#5C3B28" stroke-width="4.5"/>
             </g>
-            <text x="339" y="516" text-anchor="middle" class="svgCapB">тяни вниз</text>
+            <text x="384" y="352" text-anchor="middle" class="svgCapB">тяни вниз</text>
           </g>
 
           <!-- ================= ПИТЧЕР ДЛЯ МОЛОКА (декор) ================= -->
@@ -1756,7 +1756,10 @@ let boilerPct = 0;
     if(y0 === null) return;
     const dy = Math.max(0, Math.min(46, e.clientY - y0));
     force = dy / 46 * 30;                     // 0..30 кг
-    t.style.transform = 'translateY(' + dy * .6 + 'px)';
+    // 26 единиц SVG — ровно расстояние от подошвы темпера до обода корзины,
+    // так что на полном ходу он действительно упирается в кофе, а не висит над ним
+    const k = el('station').getBoundingClientRect().width / 900;
+    t.style.transform = 'translateY(' + (dy / 46 * 26) * k + 'px)';
     const bar = el('tampBar'), txt = el('tampTxt');
     if(bar) bar.style.width = (force/30*100) + '%';
     if(txt) txt.textContent = force.toFixed(0);
@@ -1769,6 +1772,9 @@ let boilerPct = 0;
     B.tampQuality = 1 - Math.min(1, Math.abs(force - 17.5) / 20);
     B.scores.tamp = B.tampQuality;
     el('grounds').setAttribute('fill', '#5E4133');   // утрамбованная таблетка темнее
+    const gh = +el('grounds').getAttribute('height') || 0;
+    el('grounds').setAttribute('height', gh * .86);  // и просаживается под прессом
+    el('grounds').setAttribute('y', 55 - gh * .86);
     B.step = 'lock';
     renderMachine();
   };
