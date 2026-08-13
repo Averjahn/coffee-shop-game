@@ -189,6 +189,11 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
 .verdict .big{width:56px;height:56px;margin:0 auto 6px;display:block}
 .verdict h3{font-size:22px;font-weight:900;margin-bottom:6px}
 .verdict p{color:var(--dim);font-size:14px;margin-bottom:4px}
+.tampDots{display:flex;justify-content:center;gap:14px;padding:6px 0}
+.tdot{width:26px;height:26px;border-radius:50%;background:var(--cream2);
+      border:3px solid #E2D3C0;transition:transform .12s ease,background .12s ease}
+.tdot.live{background:#F5C86B;border-color:#D9A83F;transform:scale(1.16)}
+.tdot.done{background:#7FBF8E;border-color:#4E9A66}
 .stars{display:flex;justify-content:center;gap:3px;margin:8px 0}
 
 /* ---------- магазин ---------- */
@@ -298,23 +303,29 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
                Рисуем вектором в стиле кофейни, а не фотографией: фотокорпус
                тянул за собой свой фон и выпадал из общей картинки. Здесь
                машина стоит на нашей стойке — то, что бариста видит перед собой. -->
+          <!-- Фон — не отдельная комната, а та же барная стойка, которую видно
+               в зале сверху: её задняя стенка, а под ней рабочая поверхность.
+               Раньше здесь были собственные обои и белая столешница, и низ
+               экрана читался как чужая картинка, приклеенная к кофейне. -->
           <g id="scenery">
-            <!-- стена в тёплую полоску -->
-            <rect x="0" y="0" width="900" height="322" fill="#FAE7BB"/>
-            <g fill="#F4D89C">
-              <rect x="30" y="0" width="26" height="322"/><rect x="110" y="0" width="14" height="322"/>
-              <rect x="190" y="0" width="26" height="322"/><rect x="286" y="0" width="14" height="322"/>
-              <rect x="372" y="0" width="26" height="322"/><rect x="470" y="0" width="14" height="322"/>
-              <rect x="556" y="0" width="26" height="322"/><rect x="654" y="0" width="14" height="322"/>
-              <rect x="738" y="0" width="26" height="322"/><rect x="838" y="0" width="14" height="322"/>
+            <!-- стык с залом: тень под краем стойки -->
+            <rect x="0" y="0" width="900" height="22" fill="#5A3620"/>
+            <!-- задняя стенка бара — те же доски, что и на фасаде стойки -->
+            <rect x="0" y="22" width="900" height="294" fill="#8A5A3B"/>
+            <rect x="0" y="22" width="900" height="12" fill="#000000" opacity=".18"/>
+            <g stroke="#6B4326" stroke-width="3" opacity=".5">
+              <path d="M112 22v294M246 22v294M392 22v294M538 22v294M684 22v294M812 22v294"/>
             </g>
-            <!-- столешница -->
-            <rect x="0" y="316" width="900" height="300" fill="#FAF1EA"/>
+            <!-- рабочая поверхность -->
+            <rect x="0" y="316" width="900" height="300" fill="#A6714A"/>
+            <rect x="0" y="316" width="900" height="10" fill="#C08A57"/>
             <path d="M0 316h900" stroke="#5C3B28" stroke-width="5"/>
-            <rect x="0" y="322" width="900" height="16" fill="#EFE0D5"/>
-            <!-- ближний край стойки -->
-            <rect x="0" y="566" width="900" height="50" fill="#EADACC"/>
-            <path d="M0 566h900" stroke="#5C3B28" stroke-width="4" opacity=".5"/>
+            <g stroke="#8A5A3B" stroke-width="3" opacity=".45">
+              <path d="M0 424h900M0 516h900"/>
+            </g>
+            <!-- ближний край стойки — нижняя кромка кадра -->
+            <rect x="0" y="566" width="900" height="50" fill="#8A5A3B"/>
+            <path d="M0 566h900" stroke="#5C3B28" stroke-width="4" opacity=".45"/>
           </g>
 
           <!-- ================= ХОЛОДИЛЬНИК С МОЛОКОМ ================= -->
@@ -336,7 +347,6 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
             <rect x="730" y="262" width="140" height="30" rx="8" fill="#DCD5C7"
                   stroke="#5C3B28" stroke-width="4"/>
             <rect x="778" y="272" width="44" height="10" rx="5" fill="#F7F4EC"/>
-            <text x="800" y="86" text-anchor="middle" class="svgCap">МОЛОКО</text>
           </g>
 
           <!-- ================= ПОЛКА С КРУЖКАМИ ================= -->
@@ -378,8 +388,6 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
             <path d="M92 292h32l-8 26H100z" fill="#DCD5C7" stroke="#5C3B28" stroke-width="4"/>
             <rect id="gFall" x="103" y="318" width="10" height="0" fill="#7A4A28" rx="5"/>
           </g>
-          <text x="108" y="352" text-anchor="middle" class="svgCap">КОФЕМОЛКА</text>
-          <text x="108" y="368" text-anchor="middle" class="svgCapB">держать</text>
 
           <!-- ================= КОФЕМАШИНА ================= -->
           <g id="machine">
@@ -456,7 +464,7 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
             <circle cx="330" cy="104" r="24" fill="none" stroke="#E8A85C" stroke-width="4"
                     id="brewRing" opacity=".9"/>
           </g>
-          <text x="330" y="42" text-anchor="middle" class="svgCapB" id="leverHint">держи</text>
+          <text x="330" y="42" text-anchor="middle" class="svgCapB" id="leverHint"></text>
 
           <!-- ПАРОВАЯ ТРУБКА и КРАН -->
           <g id="wand" stroke="#5C3B28" stroke-width="4.5">
@@ -472,7 +480,6 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
             </g>
             <circle cx="612" cy="176" r="7" fill="#5C3B28"/>
           </g>
-          <text x="612" y="130" text-anchor="middle" class="svgCapB">крути</text>
 
           <!-- пар из паровой трубки -->
           <g id="steamPuffs" opacity="0" fill="#FFFFFF">
@@ -531,7 +538,7 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
                     stroke="#5C3B28" stroke-width="4.5"/>
             </g>
           </g>
-          <text x="290" y="516" text-anchor="middle" class="svgCap" id="dockCap">РОЖОК</text>
+          <text x="290" y="516" text-anchor="middle" class="svgCap" id="dockCap"></text>
 
           <!-- ================= ТЕМПЕР ================= -->
           <g id="tamperBox" opacity="0" style="pointer-events:none">
@@ -543,7 +550,6 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
               <rect x="223" y="366" width="74" height="18" rx="6" fill="url(#chrome)"
                     stroke="#5C3B28" stroke-width="4.5"/>
             </g>
-            <text x="384" y="352" text-anchor="middle" class="svgCapB">тяни вниз</text>
           </g>
 
           <!-- ================= ПИТЧЕР ДЛЯ МОЛОКА (декор) ================= -->
@@ -1606,6 +1612,7 @@ function resetBrew(){
     step:'grind', grindSize:5, dose:0, tampQuality:0,
     yield:0, brewTime:0, pressure:0,
     milkTemp:20, milkFoam:0, flushed:false,
+    presses:[],                 // глубина каждого прижатия темпером
     scores:{},
   };
 }
@@ -1614,11 +1621,11 @@ resetBrew();
 /* Подпись задачи наверху — чтобы всегда было понятно, что делать руками. */
 const TASK = {
   grind: ['Держите палец на кофемолке', 'кофе сыплется в рожок · нужно 18 г'],
-  tamp:  ['Тяните темпер вниз', 'прижмите кофе с усилием 15–20 кг'],
+  tamp:  ['Прижмите кофе темпером', 'три раза, каждый — до упора'],
   lock:  ['Перетащите рожок в группу', 'подхватите его пальцем и ведите вверх'],
   brew:  ['Держите кнопку пролива на панели', 'отпустите, когда в чашке будет 36 г'],
   steam: ['Крутите вентиль пара', 'грейте молоко до 60–65 °C'],
-  serve: ['Готово', 'посмотрите оценку и подайте гостю'],
+  serve: ['Готово', 'перетащите чашку на стойку выдачи'],
 };
 
 function renderMachine(){
@@ -1652,8 +1659,8 @@ function renderMachine(){
   tb.setAttribute('opacity', B.step === 'tamp' ? '1' : '0');
   tb.style.pointerEvents = B.step === 'tamp' ? 'auto' : 'none';
   el('pf').style.opacity = 1;
-  el('leverHint').textContent = B.step === 'brew' ? 'тяни вниз' : '';
-  el('dockCap').innerHTML = B.step === 'lock' ? '<b>тащи вверх, в группу</b>' : 'Рожок';
+  el('leverHint').textContent = '';
+  el('dockCap').textContent = '';
 
   // готовая чашка живёт только на этапе подачи
   const serving = B.step === 'serve';
@@ -1742,41 +1749,71 @@ let boilerPct = 0;
   addEventListener('pointercancel', stop);
 })();
 
-/* ---------------- 2. ТЕМПЕР: тянем вниз ---------------- */
+/* ---------------- 2. ТЕМПЕР: три прижатия ----------------
+   Бариста не «выставляет усилие по шкале» — он несколько раз прижимает кофе,
+   пока таблетка не станет ровной. Поэтому здесь три полноценных нажатия
+   темпером до самого кофе, а не удержание стрелки в зелёной зоне.
+   Оценка — насколько глубоко и насколько одинаково прижимали. */
+const TAMP_NEED = 3;
 (function(){
   const t = el('tamper');
-  let y0 = null, force = 0;
+  const HOLD = 46;              // полный ход в пикселях экрана
+  let y0 = null, deep = 0;
+
+  const paint = live => {
+    const box = el('tampDots');
+    if(!box) return;
+    const done = B.presses.length;
+    [...box.children].forEach((d, i) => {
+      d.className = 'tdot' + (i < done ? ' done' : (i === done && live > .35 ? ' live' : ''));
+    });
+  };
+  const lift = dy => {
+    // 26 единиц SVG — расстояние от подошвы темпера до кофе в корзине
+    const k = el('station').getBoundingClientRect().width / 900;
+    t.style.transform = 'translateY(' + (dy * 26) * k + 'px)';
+  };
+
   const down = e => {
     if(B.step !== 'tamp') return;
     e.preventDefault();
-    y0 = e.clientY; force = 0;
+    y0 = e.clientY; deep = 0;
     t.setPointerCapture && t.setPointerCapture(e.pointerId);
   };
   const move = e => {
     if(y0 === null) return;
-    const dy = Math.max(0, Math.min(46, e.clientY - y0));
-    force = dy / 46 * 30;                     // 0..30 кг
-    // 26 единиц SVG — ровно расстояние от подошвы темпера до обода корзины,
-    // так что на полном ходу он действительно упирается в кофе, а не висит над ним
-    const k = el('station').getBoundingClientRect().width / 900;
-    t.style.transform = 'translateY(' + (dy / 46 * 26) * k + 'px)';
-    const bar = el('tampBar'), txt = el('tampTxt');
-    if(bar) bar.style.width = (force/30*100) + '%';
-    if(txt) txt.textContent = force.toFixed(0);
+    const dy = Math.max(0, Math.min(HOLD, e.clientY - y0)) / HOLD;
+    deep = Math.max(deep, dy);
+    lift(dy);
+    paint(dy);
   };
   const up = () => {
     if(y0 === null) return;
     y0 = null;
-    t.style.transform = '';
-    if(force < 3){ return; }                  // случайный тап — не считаем
-    B.tampQuality = 1 - Math.min(1, Math.abs(force - 17.5) / 20);
-    B.scores.tamp = B.tampQuality;
-    el('grounds').setAttribute('fill', '#5E4133');   // утрамбованная таблетка темнее
+    lift(0);
+    if(deep < .35){                        // едва коснулись — прижатием не считается
+      paint(0);
+      toast('Прижмите глубже — до самого кофе');
+      return;
+    }
+    B.presses.push(deep);
+    // с каждым прижатием таблетка садится и темнеет
     const gh = +el('grounds').getAttribute('height') || 0;
-    el('grounds').setAttribute('height', gh * .86);  // и просаживается под прессом
-    el('grounds').setAttribute('y', 55 - gh * .86);
-    B.step = 'lock';
-    renderMachine();
+    el('grounds').setAttribute('height', gh * .94);
+    el('grounds').setAttribute('y', 55 - gh * .94);
+    paint(0);
+
+    if(B.presses.length >= TAMP_NEED){
+      const a = B.presses;
+      const avg = a.reduce((x, y) => x + y, 0) / a.length;
+      const spread = Math.max(...a) - Math.min(...a);
+      // ровные глубокие прижатия дают плотную таблетку; рваные — каналы в кофе
+      B.tampQuality = Math.max(0, Math.min(1, avg - spread * .7));
+      B.scores.tamp = B.tampQuality;
+      el('grounds').setAttribute('fill', '#5E4133');
+      B.step = 'lock';
+      renderMachine();
+    }
   };
   t.addEventListener('pointerdown', down);
   addEventListener('pointermove', move);
@@ -2022,13 +2059,14 @@ function drawStep(){
 
   if(B.step === 'tamp'){
     box.innerHTML = `
-      <div class="meter">
-        <div class="zone" style="left:${12/30*100}%;width:${11/30*100}%"></div>
-        <i id="tampBar" style="width:0"></i>
-        <div class="txt"><span id="tampTxt">0</span> кг</div>
+      <div class="tampDots" id="tampDots">
+        ${'<span class="tdot"></span>'.repeat(TAMP_NEED)}
       </div>
       <div class="muted" style="font-size:12.5px;margin-top:8px;text-align:center;color:var(--dim)">
-        Тяните темпер вниз — чем дальше, тем сильнее прижим</div>`;
+        Прижмите кофе темпером ${TAMP_NEED} раза — каждый раз до упора</div>`;
+    [...el('tampDots').children].forEach((d, i) => {
+      if(i < B.presses.length) d.className = 'tdot done';
+    });
     return;
   }
 
@@ -2110,7 +2148,7 @@ function evaluate(){
 
   const notes = [];
   if(sc.dose < .6) notes.push(B.dose < 18 ? 'Мало кофе в корзине — вкус пустой' : 'Переполнена корзина');
-  if(sc.tamp < .6) notes.push(B.tampQuality < .5 ? 'Темпер неровный — вода нашла канал' : 'Пережали темпер');
+  if(sc.tamp < .6) notes.push('Таблетка неровная — вода нашла канал и прошла мимо кофе');
   if(B.brewTime < 20) notes.push('Пролив быстрый — кисло, недоэкстракция');
   else if(B.brewTime > 35) notes.push('Пролив долгий — горчит');
   if(B.yield < 28) notes.push('Мало в чашке — концентрат');
