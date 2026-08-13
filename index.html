@@ -1665,12 +1665,6 @@ function setGauge(bar){
   // от -130° при нуле до +130° на пятнадцати барах.
   const nd = el('needle');
   if(nd) nd.setAttribute('transform', 'rotate(' + (-130 + pct * 260) + ' 440 104)');
-  const f = el('barFill'), v = el('barVal');
-  if(!f || !v) return;
-  f.setAttribute('width', 77 * pct);
-  // зелёный в рабочем окне 8–10 бар, иначе тревожный
-  f.setAttribute('fill', bar >= 8 && bar <= 10 ? '#5CB87F' : '#E8807F');
-  v.textContent = bar.toFixed(1);
 }
 
 
