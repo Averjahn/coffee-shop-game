@@ -422,7 +422,7 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
               <circle cx="330" cy="104" r="17" fill="#EFEAE0"/>
               <circle cx="330" cy="104" r="9" fill="#B9A894"/>
               <circle cx="550" cy="104" r="17" fill="#EFEAE0"/>
-              <circle cx="550" cy="104" r="9" fill="#B9A894"/>
+              <circle id="heatLed" cx="550" cy="104" r="9" fill="#B9A894"/>
             </g>
           </g>
 
@@ -503,19 +503,6 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
                   stroke="transparent" stroke-width="4"/>
           </g>
 
-          <!-- шкалы: давление помпы и прогрев бойлера -->
-          <g id="pressure">
-            <rect x="264" y="272" width="81" height="12" rx="6" fill="#4A423A"/>
-            <rect id="barFill" x="266" y="274" width="0" height="8" rx="4" fill="#E8807F"/>
-            <rect x="330" y="270" width="2.5" height="16" fill="#9CBE6E"/>
-            <text x="304" y="264" text-anchor="middle" class="svgCap" style="fill:#F7F4EC">
-              <tspan id="barVal">0</tspan> БАР</text>
-          </g>
-          <g id="boiler">
-            <rect x="454" y="272" width="81" height="12" rx="6" fill="#4A423A"/>
-            <rect id="boilerFill" x="456" y="274" width="0" height="8" rx="4" fill="#F5C86B"/>
-            <text x="494" y="264" text-anchor="middle" class="svgCap" style="fill:#F7F4EC">БОЙЛЕР</text>
-          </g>
 
           <!-- ================= РОЖОК (перетаскиваемый) ================= -->
           <g id="pf" style="cursor:grab">
@@ -543,11 +530,11 @@ h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px}
           <!-- ================= ТЕМПЕР ================= -->
           <g id="tamperBox" opacity="0" style="pointer-events:none">
             <g id="tamper" style="cursor:grab">
-              <path d="M243 306 h34 a10 10 0 0 1 10 10 v28 a12 12 0 0 1 -12 12 h-30 a12 12 0 0 1 -12 -12 v-28 a10 10 0 0 1 10 -10 z"
+              <path d="M243 266 h34 a10 10 0 0 1 10 10 v28 a12 12 0 0 1 -12 12 h-30 a12 12 0 0 1 -12 -12 v-28 a10 10 0 0 1 10 -10 z"
                     fill="url(#wood)" stroke="#5C3B28" stroke-width="4.5"/>
-              <rect x="231" y="356" width="58" height="10" rx="5" fill="#DCD5C7"
+              <rect x="231" y="316" width="58" height="10" rx="5" fill="#DCD5C7"
                     stroke="#5C3B28" stroke-width="4"/>
-              <rect x="223" y="366" width="74" height="18" rx="6" fill="url(#chrome)"
+              <rect x="223" y="326" width="74" height="18" rx="6" fill="url(#chrome)"
                     stroke="#5C3B28" stroke-width="4.5"/>
             </g>
           </g>
@@ -1621,7 +1608,7 @@ resetBrew();
 /* Подпись задачи наверху — чтобы всегда было понятно, что делать руками. */
 const TASK = {
   grind: ['Держите палец на кофемолке', 'кофе сыплется в рожок · нужно 18 г'],
-  tamp:  ['Прижмите кофе темпером', 'три раза, каждый — до упора'],
+  tamp:  ['Прижмите кофе темпером', 'не отпуская палец, качните вниз-вверх три раза'],
   lock:  ['Перетащите рожок в группу', 'подхватите его пальцем и ведите вверх'],
   brew:  ['Держите кнопку пролива на панели', 'отпустите, когда в чашке будет 36 г'],
   steam: ['Крутите вентиль пара', 'грейте молоко до 60–65 °C'],
@@ -1673,13 +1660,14 @@ function renderMachine(){
 }
 
 function setGauge(bar){
-  const f = el('barFill'), v = el('barVal');
-  if(!f || !v) return;                       // разметка могла поменяться — не роняем игру
   const pct = Math.max(0, Math.min(1, bar / 15));
-  f.setAttribute('width', 77 * pct);
-  // стрелка манометра: от -130° при нуле до +130° на пятнадцати барах
+  // Единственный прибор на машине — её собственный манометр:
+  // от -130° при нуле до +130° на пятнадцати барах.
   const nd = el('needle');
   if(nd) nd.setAttribute('transform', 'rotate(' + (-130 + pct * 260) + ' 440 104)');
+  const f = el('barFill'), v = el('barVal');
+  if(!f || !v) return;
+  f.setAttribute('width', 77 * pct);
   // зелёный в рабочем окне 8–10 бар, иначе тревожный
   f.setAttribute('fill', bar >= 8 && bar <= 10 ? '#5CB87F' : '#E8807F');
   v.textContent = bar.toFixed(1);
@@ -1699,11 +1687,11 @@ let boilerPct = 0;
     const now = performance.now(), dt = (now - last) / 1000;
     last = now;
     boilerPct = Math.min(100, boilerPct + dt * 12);      // полный прогрев ~8 с
-    const f = el('boilerFill');
-    if(f){
-      f.setAttribute('width', 77.7 * boilerPct / 100);
-      f.setAttribute('fill', boilerPct >= 95 ? '#5CB87F' : '#F5C86B');
-    }
+    // Индикатор на панели вместо шкалы с подписью: тускло-серый — холодная,
+    // жёлтый — греется, зелёный — вышла на рабочую температуру.
+    const f = el('heatLed');
+    if(f) f.setAttribute('fill', boilerPct >= 95 ? '#7FBF8E'
+                               : boilerPct >= 30 ? '#F5C86B' : '#B9A894');
   }, 200);
 })();
 
@@ -1749,75 +1737,109 @@ let boilerPct = 0;
   addEventListener('pointercancel', stop);
 })();
 
-/* ---------------- 2. ТЕМПЕР: три прижатия ----------------
-   Бариста не «выставляет усилие по шкале» — он несколько раз прижимает кофе,
-   пока таблетка не станет ровной. Поэтому здесь три полноценных нажатия
-   темпером до самого кофе, а не удержание стрелки в зелёной зоне.
-   Оценка — насколько глубоко и насколько одинаково прижимали. */
+/* ---------------- 2. ТЕМПЕР: три прижатия одним движением ----------------
+   Бариста не отрывает руку от темпера: он прижимает кофе несколько раз подряд,
+   качая рукой вверх-вниз. Поэтому здесь один непрерывный жест — палец
+   ведёт темпер, тот идёт за ним один к одному и на полном ходу подошва
+   входит в корзину и упирается в кофе. Три касания — таблетка готова.
+
+   DIP — путь от подошвы темпера (y=344) до поверхности кофе в корзине:
+   обод корзины на 410, кофе чуть ниже, поэтому 92 единицы SVG. */
 const TAMP_NEED = 3;
+const TAMP_DIP = 92;
 (function(){
   const t = el('tamper');
-  const HOLD = 46;              // полный ход в пикселях экрана
-  let y0 = null, deep = 0;
+  let active = false, y0 = 0, dip = 0, peak = 0, armed = true, vLast = 0, tLast = 0;
 
   const paint = live => {
     const box = el('tampDots');
     if(!box) return;
     const done = B.presses.length;
     [...box.children].forEach((d, i) => {
-      d.className = 'tdot' + (i < done ? ' done' : (i === done && live > .35 ? ' live' : ''));
+      d.className = 'tdot' + (i < done ? ' done' : (i === done && live > .5 ? ' live' : ''));
     });
   };
-  const lift = dy => {
-    // 26 единиц SVG — расстояние от подошвы темпера до кофе в корзине
-    const k = el('station').getBoundingClientRect().width / 900;
-    t.style.transform = 'translateY(' + (dy * 26) * k + 'px)';
+  // Двигаем атрибутом, а не style.transform: CSS-трансформация на этой группе
+  // браузером не применялась, и темпер только «дрожал» на месте, не доходя
+  // до кофе. Собственного transform-атрибута у него нет — конфликта не будет.
+  const place = d => {
+    if(d > 0) t.setAttribute('transform', 'translate(0,' + d.toFixed(1) + ')');
+    else t.removeAttribute('transform');
   };
 
-  const down = e => {
-    if(B.step !== 'tamp') return;
-    e.preventDefault();
-    y0 = e.clientY; deep = 0;
-    t.setPointerCapture && t.setPointerCapture(e.pointerId);
-  };
-  const move = e => {
-    if(y0 === null) return;
-    const dy = Math.max(0, Math.min(HOLD, e.clientY - y0)) / HOLD;
-    deep = Math.max(deep, dy);
-    lift(dy);
-    paint(dy);
-  };
-  const up = () => {
-    if(y0 === null) return;
-    y0 = null;
-    lift(0);
-    if(deep < .35){                        // едва коснулись — прижатием не считается
-      paint(0);
-      toast('Прижмите глубже — до самого кофе');
-      return;
-    }
-    B.presses.push(deep);
-    // с каждым прижатием таблетка садится и темнеет
+  /* Одно засчитанное прижатие: кофе оседает, точка загорается. */
+  function press(depth, speed){
+    // Плавный уверенный ход прижимает кофе ровно; удар — трещина в таблетке,
+    // вялое касание — рыхлый слой. Идеал около 260 единиц в секунду.
+    const quality = Math.max(0, Math.min(1, depth)) *
+                    (1 - Math.min(.55, Math.abs(speed - 260) / 620));
+    B.presses.push(quality);
     const gh = +el('grounds').getAttribute('height') || 0;
     el('grounds').setAttribute('height', gh * .94);
     el('grounds').setAttribute('y', 55 - gh * .94);
     paint(0);
+    if(B.presses.length >= TAMP_NEED) finishTamp();
+  }
 
-    if(B.presses.length >= TAMP_NEED){
-      const a = B.presses;
-      const avg = a.reduce((x, y) => x + y, 0) / a.length;
-      const spread = Math.max(...a) - Math.min(...a);
-      // ровные глубокие прижатия дают плотную таблетку; рваные — каналы в кофе
-      B.tampQuality = Math.max(0, Math.min(1, avg - spread * .7));
-      B.scores.tamp = B.tampQuality;
-      el('grounds').setAttribute('fill', '#5E4133');
-      B.step = 'lock';
-      renderMachine();
-    }
+  function finishTamp(){
+    const a = B.presses;
+    const avg = a.reduce((x, y) => x + y, 0) / a.length;
+    const spread = Math.max(...a) - Math.min(...a);
+    B.tampQuality = Math.max(0, Math.min(1, avg - spread * .5));
+    B.scores.tamp = B.tampQuality;
+    el('grounds').setAttribute('fill', '#5E4133');
+    active = false;
+    place(0);
+    B.step = 'lock';
+    renderMachine();
+  }
+
+  const down = e => {
+    if(B.step !== 'tamp') return;
+    e.preventDefault();
+    active = true; y0 = e.clientY; dip = 0; peak = 0; armed = true;
+    tLast = performance.now(); vLast = 0;
+    t.setPointerCapture && t.setPointerCapture(e.pointerId);
   };
+
+  const move = e => {
+    if(!active) return;
+    const k = el('station').getBoundingClientRect().width / 900;
+    const prev = dip;
+    dip = Math.max(0, Math.min(TAMP_DIP, (e.clientY - y0) / k));
+    place(dip);
+
+    const now = performance.now(), dt = Math.max(.008, (now - tLast) / 1000);
+    tLast = now;
+    vLast = (dip - prev) / dt;                 // скорость хода, единиц SVG в секунду
+
+    const rel = dip / TAMP_DIP;
+    peak = Math.max(peak, rel);
+    paint(rel);
+
+    // Подошва дошла до кофе — прижатие засчитано, палец не отрывали.
+    if(armed && rel >= .93){
+      armed = false;
+      press(1, vLast);
+    }
+    // Подняли темпер — можно прижимать снова.
+    if(!armed && rel < .45){ armed = true; peak = 0; }
+  };
+
+  const up = () => {
+    if(!active) return;
+    active = false;
+    place(0);
+    paint(0);
+    // Палец отпустили раньше времени — прогресс не сгорает, просто продолжаем.
+    if(B.presses.length < TAMP_NEED && B.presses.length > 0)
+      toast('Не отпускайте — прижмите ещё ' + (TAMP_NEED - B.presses.length));
+  };
+
   t.addEventListener('pointerdown', down);
   addEventListener('pointermove', move);
   addEventListener('pointerup', up);
+  addEventListener('pointercancel', up);
 })();
 
 /* ---------------- 3. РОЖОК: перетаскиваем в группу ---------------- */
@@ -2063,7 +2085,8 @@ function drawStep(){
         ${'<span class="tdot"></span>'.repeat(TAMP_NEED)}
       </div>
       <div class="muted" style="font-size:12.5px;margin-top:8px;text-align:center;color:var(--dim)">
-        Прижмите кофе темпером ${TAMP_NEED} раза — каждый раз до упора</div>`;
+        Не отпуская палец, качните темпер вниз-вверх ${TAMP_NEED} раза —
+        каждый раз до самого кофе</div>`;
     [...el('tampDots').children].forEach((d, i) => {
       if(i < B.presses.length) d.className = 'tdot done';
     });
@@ -2148,7 +2171,7 @@ function evaluate(){
 
   const notes = [];
   if(sc.dose < .6) notes.push(B.dose < 18 ? 'Мало кофе в корзине — вкус пустой' : 'Переполнена корзина');
-  if(sc.tamp < .6) notes.push('Таблетка неровная — вода нашла канал и прошла мимо кофе');
+  if(sc.tamp < .6) notes.push('Таблетка неровная — прижимали рывками, вода нашла канал');
   if(B.brewTime < 20) notes.push('Пролив быстрый — кисло, недоэкстракция');
   else if(B.brewTime > 35) notes.push('Пролив долгий — горчит');
   if(B.yield < 28) notes.push('Мало в чашке — концентрат');
